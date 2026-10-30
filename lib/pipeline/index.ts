@@ -1,22 +1,26 @@
 import * as fs from "fs";
 import * as path from "path";
-import Anthropic from "@anthropic-ai/sdk";
-import { Guide } from "../schema";
+import { Guide, GuideSchema } from "../schema";
 import { runAllProbes } from "../probes";
 import { composioTrack } from "../probes/composio-track";
 import { resolveApp } from "./resolve";
+import { fetchSourceSnapshots } from "./fetch-sources";
 import { investigateApp } from "./investigate";
 import { auditGuide } from "./audit";
 import { EventEmitter, PipelineEvent } from "./types";
 
 export * from "./types";
+export * from "./llm";
 export * from "./resolve";
+export * from "./fetch-sources";
+export * from "./validate-sources";
 export * from "./investigate";
 export * from "./audit";
 export * from "./json-utils";
 
 export interface PipelineOptions {
   onEvent?: EventEmitter;
+  fresh?: boolean; // if true, bypasses slug cache
   timeoutMs?: number; // total pipeline timeout (default: 300_000ms / 5 mins)
 }
 
@@ -26,6 +30,7 @@ export async function generateGuide(
 ): Promise<Guide> {
   const onEvent = options?.onEvent || (() => {});
   const timeoutMs = options?.timeoutMs || 300_000;
+  const guidesDir = path.join(process.cwd(), "guides");
 
   const timeoutPromise = new Promise<never>((_, reject) =>
     setTimeout(
@@ -35,43 +40,64 @@ export async function generateGuide(
   );
 
   const pipelinePromise = (async () => {
-    // 0. Initialize Anthropic client if key is present
-    let anthropicClient: Anthropic | undefined;
-    if (process.env.ANTHROPIC_API_KEY) {
-      anthropicClient = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY,
-      });
-    }
-
     // 1. Stage: Resolve
     onEvent({ type: "resolving", app: input });
-    const resolved = await resolveApp(input, anthropicClient);
+    const resolved = await resolveApp(input);
 
-    // 2. Stage: Probes + ComposioTrack
+    // Cache check by slug: return existing finished guide unless fresh=true
+    const outputPath = path.join(guidesDir, `${resolved.slug}.json`);
+    if (!options?.fresh && fs.existsSync(outputPath)) {
+      try {
+        const cachedRaw = JSON.parse(fs.readFileSync(outputPath, "utf-8"));
+        const cachedGuide = GuideSchema.parse(cachedRaw);
+        onEvent({
+          type: "done",
+          slug: cachedGuide.slug,
+          path: outputPath,
+          guide: cachedGuide,
+        });
+        return cachedGuide;
+      } catch {
+        // Cached file invalid, regenerate
+      }
+    }
+
+    // 2. Stage: Fetch and Probe (in code, no model)
     onEvent({ type: "probing", target: resolved.origin });
-    const probeObservations = await runAllProbes(resolved.origin, resolved.slug);
+
+    // Fetch up to 8 snapshots from official and community URLs
+    const snapshots = await fetchSourceSnapshots(resolved);
+
+    // Run probes and composioTrack
+    const probeObservations = await runAllProbes(
+      resolved.origin,
+      resolved.slug,
+      resolved.authorizationEndpoint
+    );
     const composioObs = await composioTrack(resolved.slug);
     const track = composioObs.facts.track as "managed" | "bring-your-own" | "unknown";
 
-    // 3. Stage: Investigate
+    // 3. Stage: Investigate (model call, no tools)
     onEvent({ type: "investigating", app: resolved.appName, track });
     const draftGuide = await investigateApp(
       resolved,
+      snapshots,
       probeObservations,
-      track,
-      anthropicClient
+      track
     );
 
-    // 4. Stage: Audit
+    // 4. Stage: Audit (model call, no tools)
     onEvent({ type: "auditing", claimsCount: draftGuide.claims.length });
-    const finalGuide = await auditGuide(draftGuide, probeObservations, anthropicClient);
+    const finalGuide = await auditGuide(
+      draftGuide,
+      snapshots,
+      probeObservations
+    );
 
     // 5. Save guide to guides/<slug>.json
-    const guidesDir = path.join(process.cwd(), "guides");
     if (!fs.existsSync(guidesDir)) {
       fs.mkdirSync(guidesDir, { recursive: true });
     }
-    const outputPath = path.join(guidesDir, `${finalGuide.slug}.json`);
     fs.writeFileSync(outputPath, JSON.stringify(finalGuide, null, 2), "utf-8");
 
     // 6. Stage: Done

@@ -5,7 +5,7 @@ export interface ProbeObservation {
   status: number | string;
   error?: string;
   facts: Record<string, unknown>;
-  evidence: "tested";
+  evidence: "tested" | "doc-confirmed";
 }
 
 export type ComposioTrack = "managed" | "bring-your-own" | "unknown";

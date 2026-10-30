@@ -9,7 +9,7 @@
     "start": "next start",
     "generate": "tsx scripts/generate.ts",
     "probe": "tsx scripts/probe.ts",
-    "test": "tsx --test tests/ssrf.test.ts",
+    "test": "tsx --test tests/**/*.test.ts",
     "validate": "tsx scripts/validate.ts",
     "typecheck": "tsc --noEmit"
   },
@@ -17,7 +17,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.3.0",
+    "@google/genai": "^2.32.0",
     "@types/node": "^26.6.6",
     "next": "^16.4.3",
     "react": "^19.3.1",

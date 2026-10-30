@@ -5,8 +5,25 @@ export function dcrAdvertised(
   referenceUrl: string
 ): ProbeObservation {
   const checkedAt = new Date().toISOString();
+
+  if (!metadata) {
+    return {
+      probe: "dcrAdvertised",
+      url: referenceUrl,
+      checkedAt,
+      status: "unknown",
+      facts: {
+        dcrAdvertised: "unknown",
+        registrationEndpoint: null,
+        note: "No OAuth metadata was discovered; Dynamic Client Registration advertisement status is unknown.",
+      },
+      evidence: "tested",
+    };
+  }
+
   const registrationEndpoint =
-    metadata && typeof metadata.registration_endpoint === "string" && metadata.registration_endpoint.trim().length > 0
+    typeof metadata.registration_endpoint === "string" &&
+    metadata.registration_endpoint.trim().length > 0
       ? metadata.registration_endpoint
       : null;
 

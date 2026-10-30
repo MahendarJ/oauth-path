@@ -9,12 +9,3 @@ export type PipelineEvent =
   | { type: "error"; message: string };
 
 export type EventEmitter = (event: PipelineEvent) => void;
-
-export interface ResolvedApp {
-  appName: string;
-  slug: string;
-  origin: string;
-  authDomain: string;
-  docsUrl: string;
-  devConsoleUrl: string;
-}

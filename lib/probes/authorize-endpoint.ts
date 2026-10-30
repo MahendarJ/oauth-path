@@ -1,7 +1,11 @@
 import { safeFetch } from "./ssrf";
 import { ProbeObservation } from "./types";
 
-export type AuthorizeClassification = "login-redirect" | "client-error" | "other";
+export type AuthorizeClassification =
+  | "login-redirect"
+  | "client-error"
+  | "inconclusive"
+  | "other";
 
 export async function authorizeEndpoint(url: string): Promise<ProbeObservation> {
   const checkedAt = new Date().toISOString();
@@ -33,22 +37,38 @@ export async function authorizeEndpoint(url: string): Promise<ProbeObservation> 
       } else if (rawLoc.includes("error=") || rawLoc.includes("invalid_client")) {
         classification = "client-error";
       } else {
-        // Many OAuth servers redirect to login by default on any unauthenticated GET
         classification = "login-redirect";
       }
     } else if (res.status === 400 || res.status === 401 || res.status === 403) {
       classification = "client-error";
-    } else {
+    } else if (res.status === 200) {
+      const contentType = (res.headers.get("content-type") || "").toLowerCase();
       const lowerBody = (res.data || "").toLowerCase();
-      if (
+      const isHtml =
+        contentType.includes("html") ||
+        lowerBody.includes("<html") ||
+        lowerBody.includes("<!doctype");
+
+      if (isHtml) {
+        classification = "inconclusive";
+      } else if (
         lowerBody.includes("invalid client") ||
-        lowerBody.includes("client_id") ||
+        lowerBody.includes("invalid_client") ||
         lowerBody.includes("invalid_request") ||
         lowerBody.includes("unauthorized_client")
       ) {
         classification = "client-error";
-      } else if (lowerBody.includes("log in") || lowerBody.includes("sign in")) {
-        classification = "login-redirect";
+      } else {
+        classification = "other";
+      }
+    } else {
+      const lowerBody = (res.data || "").toLowerCase();
+      if (
+        lowerBody.includes("invalid client") ||
+        lowerBody.includes("invalid_client") ||
+        lowerBody.includes("invalid_request")
+      ) {
+        classification = "client-error";
       } else {
         classification = "other";
       }
@@ -65,7 +85,10 @@ export async function authorizeEndpoint(url: string): Promise<ProbeObservation> 
             redactedLocation: res.location.redactedLocation,
           }
         : null,
-      note: "A login redirect proves nothing about client validity.",
+      note:
+        classification === "inconclusive"
+          ? "Endpoint returned HTTP 200 HTML; response is inconclusive about client validity."
+          : "A login redirect proves nothing about client validity.",
     };
 
     return {

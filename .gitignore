@@ -6,6 +6,9 @@
 # testing
 /coverage
 
+# cache and snapshots
+/.cache/
+
 # next.js
 /.next/
 /out/

@@ -16,7 +16,8 @@ export * from "./composio-track";
 
 export async function runAllProbes(
   origin: string,
-  explicitSlug?: string
+  explicitSlug?: string,
+  resolvedAuthEndpoint?: string
 ): Promise<ProbeObservation[]> {
   const observations: ProbeObservation[] = [];
 
@@ -32,15 +33,12 @@ export async function runAllProbes(
   const protectedObs = await protectedResource(cleanOrigin);
   observations.push(protectedObs);
 
-  // 4. Authorize Endpoint probe
-  let authEndpointUrl: string | null = null;
+  // 4. Authorize Endpoint probe (run only with an endpoint from metadata or resolved.authorizationEndpoint)
   const metadata = metadataObs.facts.metadata as Record<string, unknown> | null;
-  if (metadata && typeof metadata.authorization_endpoint === "string") {
-    authEndpointUrl = metadata.authorization_endpoint;
-  } else {
-    // Fallback standard authorize path on origin
-    authEndpointUrl = `${cleanOrigin}/authorize`;
-  }
+  const authEndpointUrl =
+    (metadata && typeof metadata.authorization_endpoint === "string"
+      ? metadata.authorization_endpoint
+      : undefined) || resolvedAuthEndpoint;
 
   if (authEndpointUrl) {
     const authObs = await authorizeEndpoint(authEndpointUrl);

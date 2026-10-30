@@ -202,6 +202,17 @@ export const COMPOSIO_TAIL = [
 ] as const;
 
 /**
+ * Generation execution log detailing the model used and generation timestamp.
+ */
+export const GenerationLogSchema = z.object({
+  model: z.string().min(1, "Model ID is required"),
+  generatedAt: z.string().optional(),
+  grounded: z.boolean().optional(),
+  retries: z.number().optional(),
+});
+export type GenerationLog = z.infer<typeof GenerationLogSchema>;
+
+/**
  * Top-level Guide Schema.
  * Includes cross-field validation ensuring every referenced claimId exists in claims list.
  */
@@ -214,6 +225,7 @@ export const GuideSchema = z
       .regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens"),
     generatedAt: z.string().min(1, "generatedAt timestamp is required"),
     generatedBy: z.string().min(1, "generatedBy attribution is required"),
+    generationLog: GenerationLogSchema.optional(),
     track: TrackSchema,
     composio: ComposioConfigSchema,
     verdict: VerdictSchema,

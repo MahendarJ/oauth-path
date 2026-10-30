@@ -2,14 +2,18 @@ import { safeFetch } from "./ssrf";
 import { ProbeObservation } from "./types";
 
 export interface ExtractedOAuthMetadata {
+  issuer?: string;
   authorization_endpoint?: string;
   token_endpoint?: string;
   registration_endpoint?: string;
+  revocation_endpoint?: string;
+  device_authorization_endpoint?: string;
   scopes_supported?: string[];
+  response_types_supported?: string[];
   code_challenge_methods_supported?: string[];
   grant_types_supported?: string[];
   token_endpoint_auth_methods_supported?: string[];
-  [key: string]: unknown;
+  client_id_metadata_document_supported?: boolean | string;
 }
 
 export async function oauthMetadata(origin: string): Promise<ProbeObservation> {
@@ -26,7 +30,7 @@ export async function oauthMetadata(origin: string): Promise<ProbeObservation> {
   };
 
   // 1. Try RFC 8414 /.well-known/oauth-authorization-server
-  let res = await safeFetch(oauthServerUrl).catch((err) => ({
+  const res = await safeFetch(oauthServerUrl).catch((err) => ({
     status: 0,
     statusText: err.message,
     headers: new Headers(),
@@ -54,26 +58,58 @@ export async function oauthMetadata(origin: string): Promise<ProbeObservation> {
 
   if (successfulRes && successfulRes.json && typeof successfulRes.json === "object") {
     const doc = successfulRes.json as Record<string, unknown>;
+
+    // Keep ONLY the 12 specified fields, drop 'raw'
     const extracted: ExtractedOAuthMetadata = {
-      authorization_endpoint: typeof doc.authorization_endpoint === "string" ? doc.authorization_endpoint : undefined,
-      token_endpoint: typeof doc.token_endpoint === "string" ? doc.token_endpoint : undefined,
-      registration_endpoint: typeof doc.registration_endpoint === "string" ? doc.registration_endpoint : undefined,
-      scopes_supported: Array.isArray(doc.scopes_supported) ? (doc.scopes_supported as string[]) : undefined,
-      code_challenge_methods_supported: Array.isArray(doc.code_challenge_methods_supported)
+      issuer: typeof doc.issuer === "string" ? doc.issuer : undefined,
+      authorization_endpoint:
+        typeof doc.authorization_endpoint === "string"
+          ? doc.authorization_endpoint
+          : undefined,
+      token_endpoint:
+        typeof doc.token_endpoint === "string" ? doc.token_endpoint : undefined,
+      registration_endpoint:
+        typeof doc.registration_endpoint === "string"
+          ? doc.registration_endpoint
+          : undefined,
+      revocation_endpoint:
+        typeof doc.revocation_endpoint === "string"
+          ? doc.revocation_endpoint
+          : undefined,
+      device_authorization_endpoint:
+        typeof doc.device_authorization_endpoint === "string"
+          ? doc.device_authorization_endpoint
+          : undefined,
+      scopes_supported: Array.isArray(doc.scopes_supported)
+        ? (doc.scopes_supported as string[])
+        : undefined,
+      response_types_supported: Array.isArray(doc.response_types_supported)
+        ? (doc.response_types_supported as string[])
+        : Array.isArray(doc.response_type_supported)
+        ? (doc.response_type_supported as string[])
+        : undefined,
+      code_challenge_methods_supported: Array.isArray(
+        doc.code_challenge_methods_supported
+      )
         ? (doc.code_challenge_methods_supported as string[])
         : undefined,
       grant_types_supported: Array.isArray(doc.grant_types_supported)
         ? (doc.grant_types_supported as string[])
         : undefined,
-      token_endpoint_auth_methods_supported: Array.isArray(doc.token_endpoint_auth_methods_supported)
+      token_endpoint_auth_methods_supported: Array.isArray(
+        doc.token_endpoint_auth_methods_supported
+      )
         ? (doc.token_endpoint_auth_methods_supported as string[])
         : undefined,
+      client_id_metadata_document_supported:
+        doc.client_id_metadata_document_supported !== undefined
+          ? (doc.client_id_metadata_document_supported as boolean | string)
+          : undefined,
     };
 
     facts.discovered = true;
     facts.sourceEndpoint = sourceEndpoint;
     facts.metadata = extracted;
-    facts.raw = doc;
 
     return {
       probe: "oauthMetadata",

@@ -3,6 +3,7 @@ import * as path from "path";
 import { ComposioTrack, ProbeObservation } from "./types";
 
 const SNAPSHOT_DATE = "2026-10-30";
+const SOURCE_URL = "https://docs.composio.dev/toolkits/managed-auth";
 
 let managedSlugsCache: Set<string> | null = null;
 let byoSlugsCache: Set<string> | null = null;
@@ -44,18 +45,29 @@ export function normalizeSlug(input: string): string {
     .replace(/[^a-z0-9_]/g, "_");
 }
 
+function resolveTrackFromLists(slug: string, managed: Set<string>, byo: Set<string>): ComposioTrack {
+  if (managed.has(slug)) return "managed";
+  if (byo.has(slug)) return "bring-your-own";
+  return "unknown";
+}
+
 export async function composioTrack(slug: string): Promise<ProbeObservation> {
   const checkedAt = new Date().toISOString();
   const normalized = normalizeSlug(slug);
+  const mcpSlug = normalized.endsWith("_mcp") ? normalized : `${normalized}_mcp`;
   const composioApiKey = process.env.COMPOSIO_API_KEY;
 
   let track: ComposioTrack = "unknown";
-  let source = "local-snapshot";
-  let snapshotDate = SNAPSHOT_DATE;
+  let mcpTrack: ComposioTrack = "unknown";
+  let source = SOURCE_URL;
+
+  const { managed, byo } = loadSlugSets();
+
+  track = resolveTrackFromLists(normalized, managed, byo);
+  mcpTrack = resolveTrackFromLists(mcpSlug, managed, byo);
 
   if (composioApiKey) {
     try {
-      // Swappable live lookup when COMPOSIO_API_KEY is available
       const response = await fetch(`https://backend.composio.dev/api/v1/toolkits/${normalized}`, {
         headers: {
           "x-api-key": composioApiKey,
@@ -69,38 +81,39 @@ export async function composioTrack(slug: string): Promise<ProbeObservation> {
         track = schemes.some((s) => s.toLowerCase().includes("oauth"))
           ? "managed"
           : "bring-your-own";
-        source = "composio-api";
+        source = "https://backend.composio.dev/api/v1/toolkits";
       }
     } catch {
-      // Fallback to local snapshot if API lookup fails
-    }
-  }
-
-  // If not resolved via live API, consult local snapshot lists
-  if (track === "unknown") {
-    const { managed, byo } = loadSlugSets();
-    if (managed.has(normalized)) {
-      track = "managed";
-    } else if (byo.has(normalized)) {
-      track = "bring-your-own";
+      // Fallback to local snapshot
     }
   }
 
   const facts: Record<string, unknown> = {
     slug: normalized,
-    rawInput: slug,
     track,
-    snapshotDate,
+    snapshotDate: SNAPSHOT_DATE,
     source,
     managedOAuthAvailable: track === "managed",
   };
 
+  // If mcp slug was found and differs from base slug, report both
+  if (mcpTrack !== "unknown" && mcpTrack !== track) {
+    facts.mcpSlug = mcpSlug;
+    facts.mcpTrack = mcpTrack;
+    facts.tracksDiffer = true;
+    facts.note = `Base slug '${normalized}' is ${track}, while '${mcpSlug}' is ${mcpTrack}.`;
+  } else if (mcpTrack !== "unknown") {
+    facts.mcpSlug = mcpSlug;
+    facts.mcpTrack = mcpTrack;
+    facts.tracksDiffer = false;
+  }
+
   return {
     probe: "composioTrack",
-    url: `https://docs.composio.dev/toolkits/${normalized}`,
+    url: SOURCE_URL,
     checkedAt,
     status: "ok",
     facts,
-    evidence: "tested",
+    evidence: "doc-confirmed",
   };
 }
