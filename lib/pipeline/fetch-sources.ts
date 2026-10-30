@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
-import { safeFetch } from "../probes/ssrf";
+import { MAX_DOC_BYTES, safeFetch } from "../probes/ssrf";
+import { writableDir } from "../store";
 import { ResolvedApp } from "./resolve";
 
 export interface SourceSnapshot {
@@ -12,6 +13,8 @@ export interface SourceSnapshot {
 
 const MAX_PAGES = 8;
 const MAX_CHARS_PER_PAGE = 40_000;
+// Total across all pages, so investigate and audit requests stay inside free-tier per-minute token limits
+const MAX_TOTAL_CHARS = 32_000;
 
 /**
  * Strips HTML tags, styles, scripts, and collapses whitespace into plain text.
@@ -41,7 +44,7 @@ export function htmlToText(html: string): string {
  */
 export async function fetchSourceSnapshots(
   resolved: ResolvedApp,
-  cacheDir = path.join(process.cwd(), ".cache/sources")
+  cacheDir = writableDir("sources")
 ): Promise<SourceSnapshot[]> {
   const targets: { url: string; kind: "official" | "community" }[] = [
     ...resolved.officialUrls.map((url) => ({ url, kind: "official" as const })),
@@ -53,9 +56,10 @@ export async function fetchSourceSnapshots(
 
   for (const target of targets) {
     try {
-      const res = await safeFetch(target.url);
+      const res = await safeFetch(target.url, { maxBytes: MAX_DOC_BYTES });
       if (res.status >= 200 && res.status < 400 && res.data) {
-        const plainText = htmlToText(res.data).slice(0, MAX_CHARS_PER_PAGE);
+        const used = snapshots.reduce((n, s) => n + s.text.length, 0);
+        const plainText = htmlToText(res.data).slice(0, Math.min(MAX_CHARS_PER_PAGE, MAX_TOTAL_CHARS - used));
         if (plainText.length > 0) {
           snapshots.push({
             url: target.url,

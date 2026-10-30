@@ -4,7 +4,19 @@ import { Guide, GuideSchema, COMPOSIO_TAIL } from "../schema";
 import { ProbeObservation } from "../probes/types";
 import { SourceSnapshot } from "./fetch-sources";
 import { validateClaimSources } from "./validate-sources";
-import { generateJson } from "./llm";
+import { currentModel, generateJson } from "./llm";
+import { saveDebug } from "./debug";
+
+/**
+ * prompts/audit.md replies with { guide, auditLog, auditSummary }. The prompt requires
+ * guide.auditLog to equal the top-level auditLog, so the top-level one is applied here.
+ */
+function parseAuditOutput(output: unknown): Guide {
+  const wrapper = (output ?? {}) as { guide?: unknown; auditLog?: unknown };
+  const guide = { ...((wrapper.guide ?? {}) as Record<string, unknown>) };
+  if (Array.isArray(wrapper.auditLog)) guide.auditLog = wrapper.auditLog;
+  return GuideSchema.parse(guide);
+}
 
 export async function auditGuide(
   draftGuide: Guide,
@@ -28,19 +40,20 @@ export async function auditGuide(
   const firstResult = await generateJson<unknown>({
     system,
     user: userPayload,
-    grounded: false,
   });
 
   try {
-    audited = GuideSchema.parse(firstResult);
+    audited = parseAuditOutput(firstResult);
     validateClaimSources(audited, snapshots, probes);
   } catch (err: unknown) {
     // Attempt 2 (Repair): Send validation error back once as a JSON user message
     const errorText = err instanceof Error ? err.message : String(err);
+    saveDebug(draftGuide.slug, "audit-attempt1", { error: errorText, output: firstResult });
     const repairUser = JSON.stringify({
       draft: draftGuide,
       sources: snapshots,
       probes,
+      previousOutput: firstResult,
       error: errorText,
       repair: true,
     });
@@ -48,11 +61,10 @@ export async function auditGuide(
     const repairResult = await generateJson<unknown>({
       system,
       user: repairUser,
-      grounded: false,
     });
 
     try {
-      audited = GuideSchema.parse(repairResult);
+      audited = parseAuditOutput(repairResult);
       validateClaimSources(audited, snapshots, probes);
     } catch (secondErr: unknown) {
       const secondMessage =
@@ -67,7 +79,7 @@ export async function auditGuide(
   audited.composioTail = [...COMPOSIO_TAIL];
 
   // Record generationLog with the model ID
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = currentModel();
   audited.generatedBy = model;
   audited.generationLog = {
     model,

@@ -68,7 +68,7 @@ test("validateGuideHasGenerationLog correctly fails when generation log or model
   // Valid model id in generationLog
   assert.doesNotThrow(() =>
     validateGuideHasGenerationLog(
-      { app: "Test", generationLog: { model: "gemini-2.5-flash" } },
+      { app: "Test", generationLog: { model: "llama-3.3-70b-versatile" } },
       "test-valid.json"
     )
   );

@@ -1,0 +1,495 @@
+{
+  "app": "Notion",
+  "slug": "notion",
+  "generatedAt": "2026-10-30",
+  "generatedBy": "gpt-oss-120b",
+  "generationLog": {
+    "model": "gpt-oss-120b",
+    "generatedAt": "2026-10-30T14:36:33.956Z"
+  },
+  "track": "managed",
+  "composio": {
+    "toolkitSlug": "notion",
+    "managedOAuthAvailable": true,
+    "claimIds": [
+      "k1",
+      "k2"
+    ]
+  },
+  "verdict": {
+    "prototype": {
+      "difficulty": "Easy",
+      "handsOnTime": "15 min",
+      "waitTime": "none",
+      "headline": "No OAuth app needed to start: connect through Composio's managed Notion app."
+    },
+    "production": {
+      "difficulty": "Moderate",
+      "handsOnTime": "unknown (depends on app complexity)",
+      "waitTime": "unknown (review step)",
+      "headline": "Production use follows the same review process; timing varies."
+    },
+    "confidence": "Medium: creation and token flow steps are documented, but review timing and managed‑track usage are uncertain.",
+    "summary": "Notion offers a self‑serve public connection that requires a workspace‑owner review before the auth URL is released. The OAuth flow itself is standard and documented, but the provider does not publish limits, paid‑tier requirements, or PKCE rules."
+  },
+  "stages": [
+    {
+      "id": "composio-managed",
+      "name": "Connect through Composio's managed Notion app",
+      "owner": "agent",
+      "effort": "15 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Create a Composio session for your user. Do not pass an auth config for notion, so the managed app is used.",
+          "claimIds": [
+            "k2"
+          ]
+        },
+        {
+          "text": "Send the user a Connect Link. They approve on Notion's consent screen, which shows Composio's app name.",
+          "claimIds": [
+            "k7"
+          ]
+        },
+        {
+          "text": "Run one test tool call to confirm the connection works.",
+          "claimIds": []
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "name": "Determine if a public connection (OAuth) is needed",
+      "owner": "developer",
+      "effort": "5 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "If your integration must be installed by other Notion users, you need a public connection (OAuth). Otherwise use an internal connection.",
+          "claimIds": [
+            "c1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "name": "Create a public connection in Notion",
+      "owner": "developer",
+      "effort": "10‑15 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Log into https://app.notion.com/developers/connections as a workspace owner and click **New public connection**.",
+          "claimIds": [
+            "c2"
+          ]
+        },
+        {
+          "text": "Fill in the connection name, description, and **Redirect URI(s)**. Note: the redirect URI cannot be changed after creation.",
+          "claimIds": [
+            "c3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "name": "Submit the connection for review",
+      "owner": "developer",
+      "effort": "5 min",
+      "wait": "unknown (provider review)",
+      "steps": [
+        {
+          "text": "After saving the connection, click **Submit for review**. The **Authorization URL** field will be populated only after the review is approved.",
+          "claimIds": [
+            "c4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "name": "Collect OAuth credentials",
+      "owner": "developer",
+      "effort": "5 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "From the connection’s **Configuration** tab, copy the **Client ID**, **Client Secret**, and the generated **Authorization URL**.",
+          "claimIds": [
+            "c1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s5",
+      "name": "Agent creates a Connect Link (managed OAuth)",
+      "owner": "agent",
+      "effort": "5 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Using Composio’s managed Notion OAuth app, draft the Connect Link with the collected credentials and the redirect URI.",
+          "claimIds": [
+            "c16"
+          ]
+        },
+        {
+          "text": "Generate the link, share it with a test user, and poll the connection status until it becomes **ACTIVE**.",
+          "claimIds": [
+            "c16"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s6",
+      "name": "Store access and refresh tokens securely",
+      "owner": "developer",
+      "effort": "10 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "When the user completes the flow, Notion returns `access_token` and `refresh_token` (see token endpoint). Store them in a secret manager or encrypted database.",
+          "claimIds": [
+            "c6"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s7",
+      "name": "Refresh tokens as needed",
+      "owner": "agent",
+      "effort": "5 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Composio’s managed OAuth runtime automatically refreshes tokens using the same token endpoint with `grant_type=refresh_token`.",
+          "claimIds": [
+            "c8"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s8",
+      "name": "Production monitoring & support",
+      "owner": "developer",
+      "effort": "ongoing",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Monitor API errors (e.g., 401) and re‑run the token refresh flow if needed. If the connection is blocked, contact Notion support via the help center.",
+          "claimIds": []
+        }
+      ]
+    }
+  ],
+  "requirements": [
+    "Workspace owner rights in Notion (required to create a public connection)",
+    "A valid HTTPS redirect URI that matches the one registered in the connection",
+    "Client ID and Client Secret obtained from the Notion Developer portal",
+    "Compliance with Notion’s Terms of Service",
+    "If you want Notion's MCP server rather than its API, that is a separate Composio toolkit (NOTION_MCP) with its own auth (k5)."
+  ],
+  "blockers": [
+    {
+      "issue": "Review delay prevents obtaining the Authorization URL",
+      "whenItHits": "After submitting the public connection for review",
+      "whatToDo": "Wait for Notion to approve the connection; if the review exceeds a week, contact Notion support for status.",
+      "escalation": "https://www.notion.so/help/contact",
+      "claimIds": [
+        "c4"
+      ]
+    },
+    {
+      "issue": "Non‑owner cannot create a public connection",
+      "whenItHits": "When a non‑owner attempts to access the Developer portal",
+      "whatToDo": "Ask a workspace owner to create the connection or transfer ownership.",
+      "escalation": null,
+      "claimIds": [
+        "c2"
+      ]
+    },
+    {
+      "issue": "Track conflict: first stage should start with Composio’s managed OAuth, but draft currently requires provider registration first",
+      "whenItHits": "Stage s1",
+      "whatToDo": "Reorder steps so the initial action uses Composio’s managed OAuth configuration before any provider‑side registration.",
+      "escalation": null,
+      "claimIds": []
+    }
+  ],
+  "agentVsYou": {
+    "agentCanDo": [
+      "Draft the Composio OAuth configuration values (client ID, secret, redirect URI)",
+      "Generate the Connect Link and poll connection status until ACTIVE",
+      "Run test API calls using the obtained access token",
+      "Handle token refresh automatically via the managed OAuth runtime"
+    ],
+    "youMustDo": [
+      "Create the public connection in Notion and submit it for review",
+      "Provide the client ID, client secret, and redirect URI to Composio",
+      "Store the access and refresh tokens securely in your own infrastructure",
+      "Monitor usage and handle any compliance or policy questions"
+    ]
+  },
+  "claims": [
+    {
+      "id": "c1",
+      "text": "Public connections use the OAuth 2.0 protocol.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developers.notion.com/guides/get-started/authorization",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "text": "You must be a workspace owner to create a public connection.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developers.notion.com/guides/get-started/authorization",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c3",
+      "text": "Redirect URI(s) are set in the OAuth configuration section and cannot be changed after creation.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developers.notion.com/guides/get-started/authorization",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c4",
+      "text": "The Authorization URL field populates after a public connection is submitted for review.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developers.notion.com/guides/get-started/authorization",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c5",
+      "text": "Calling https://api.notion.com/v1/oauth/authorize with an invalid client_id redirects to a login page (302).",
+      "level": "tested",
+      "sources": [
+        {
+          "url": "https://api.notion.com/v1/oauth/authorize?client_id=INVALID&response_type=code&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback",
+          "fetchedAt": "2026-10-30",
+          "note": "Probe shows 302 redirect to app.notion.com/install-integration"
+        }
+      ]
+    },
+    {
+      "id": "c6",
+      "text": "The token endpoint is https://api.notion.com/v1/oauth/token and returns an access_token and refresh_token.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developers.notion.com/guides/get-started/authorization",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c7",
+      "text": "Token exchange uses HTTP Basic Authentication with client_id:client_secret base64‑encoded.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developers.notion.com/guides/get-started/authorization",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c8",
+      "text": "Refreshing an access token uses the same token endpoint with grant_type=refresh_token.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developers.notion.com/guides/get-started/authorization",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c16",
+      "text": "Composio provides a managed OAuth integration for Notion.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/toolkits/managed-auth",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "k1",
+      "text": "Composio's NOTION toolkit lists auth OAUTH2, API_KEY; Composio-managed OAuth available: yes.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/toolkits/notion",
+          "fetchedAt": "2026-10-30",
+          "note": "Toolkit page header, checked on this run."
+        }
+      ]
+    },
+    {
+      "id": "k2",
+      "text": "With a Composio managed app you do not register your own OAuth app; Composio stores and refreshes the connected-account credentials.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "fetchedAt": "2026-10-30",
+          "note": "Added in code from Composio's docs; exact wording checked on this run."
+        }
+      ]
+    },
+    {
+      "id": "k3",
+      "text": "Composio's current docs say managed apps can stay in production when their consent branding, scopes and shared provider quotas fit your product.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "fetchedAt": "2026-10-30",
+          "note": "Added in code from Composio's docs; exact wording checked on this run."
+        }
+      ]
+    },
+    {
+      "id": "k4",
+      "text": "Managed apps share provider quota across all Composio users and enforce a 2-minute minimum polling interval for triggers; your own app gets dedicated quota and faster polling where supported.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "fetchedAt": "2026-10-30",
+          "note": "Added in code from Composio's docs; exact wording checked on this run."
+        }
+      ]
+    },
+    {
+      "id": "k7",
+      "text": "With a managed app, users see Composio's app name on the provider's OAuth consent screen.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "fetchedAt": "2026-10-30",
+          "note": "Added in code from Composio's docs; exact wording checked on this run."
+        }
+      ]
+    },
+    {
+      "id": "k5",
+      "text": "Composio also has a separate NOTION_MCP toolkit (auth DCR_OAUTH; Composio-managed OAuth available: no). Its setup is separate from NOTION.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/toolkits/notion_mcp",
+          "fetchedAt": "2026-10-30",
+          "note": "Toolkit page header, checked on this run."
+        }
+      ]
+    },
+    {
+      "id": "k6",
+      "text": "mcp.notion.com publishes OAuth server metadata with a dynamic client registration endpoint (https://mcp.notion.com/register), so an MCP client can register itself without a manually created app.",
+      "level": "tested",
+      "sources": [
+        {
+          "url": "https://mcp.notion.com/.well-known/oauth-authorization-server",
+          "fetchedAt": "2026-10-30",
+          "note": "GET returned HTTP 200 with OAuth metadata on this run."
+        }
+      ]
+    }
+  ],
+  "uncertain": [
+    "Paid plan or tier required for OAuth access is not documented.",
+    "Quota or user limits for public connections are not documented.",
+    "PKCE requirement for Notion’s own OAuth flow is not documented.",
+    "Privacy policy / terms URL requirement for a public connection is not documented.",
+    "Domain verification for a public connection is not documented.",
+    "Partner program or manual approval beyond the standard review is not documented.",
+    "Redirect URI scheme restrictions (e.g., HTTPS only) are not documented.",
+    "Contact method for provider when blocked is not documented.",
+    "Older Composio guidance reportedly said to use managed apps in development and your own app in production; the current managed-vs-custom page says managed apps can stay in production (k3). The older page was not fetched here, so confirm with Composio for your case."
+  ],
+  "tested": [
+    "c5",
+    "mcp.notion.com publishes OAuth server metadata with a dynamic client registration endpoint (https://mcp.notion.com/register), so an MCP client can register itself without a manually created app. (k6)"
+  ],
+  "notTested": [
+    "Whether Notion validates the format of the redirect URI before review.",
+    "Exact review turnaround time for a public connection."
+  ],
+  "auditLog": [
+    {
+      "was": "Prototype headline: \"A public Notion connection can be obtained after a short review, typically in a few days.\"",
+      "now": "Prototype headline: \"A public Notion connection can be obtained after a review, timing varies.\"",
+      "change": "corrected"
+    },
+    {
+      "was": "Production headline: \"Production use follows the same review process; no extra quotas are documented.\"",
+      "now": "Production headline: \"Production use follows the same review process; timing varies.\"",
+      "change": "corrected"
+    },
+    {
+      "was": "Requirement entry: \"Compliance with Notion’s Terms of Service (no additional paid tier mentioned)\"",
+      "now": "Requirement entry: \"Compliance with Notion’s Terms of Service\"",
+      "change": "corrected"
+    },
+    {
+      "was": "No blocker about track/first‑stage mismatch.",
+      "now": "Added blocker: \"Track conflict: first stage should start with Composio’s managed OAuth, but draft currently requires provider registration first\"",
+      "change": "added"
+    },
+    {
+      "was": "Confidence: \"High on the creation and token flow steps; uncertain on review timing and any hidden quota limits.\"",
+      "now": "Confidence: \"Medium: creation and token flow steps are documented, but review timing and managed‑track usage are uncertain.\"",
+      "change": "corrected"
+    },
+    {
+      "was": "Prototype: A public Notion connection can be obtained after a review, timing varies.",
+      "now": "Prototype: No OAuth app needed to start: connect through Composio's managed Notion app.",
+      "change": "corrected (in code: managed track)"
+    },
+    {
+      "was": "Create a public connection in the Notion Developer portal, submit it for review, and once approved configure the managed OAuth app in Composio.",
+      "now": "Prototype today with Composio's managed Notion app: create a session and send your user a Connect Link. Register your own Notion OAuth app only if you need your own name on the consent screen, custom scopes, dedicated quota or polling faster than 2 minutes.",
+      "change": "corrected (in code: managed track)"
+    },
+    {
+      "was": "Composio and MCP facts as drafted by the model",
+      "now": "Claims k1, k2, k3, k4, k7, k5, k6 added in code from Composio's docs and probes on this run",
+      "change": "added (in code)"
+    }
+  ],
+  "nextAction": "Prototype today with Composio's managed Notion app: create a session and send your user a Connect Link. Register your own Notion OAuth app only if you need your own name on the consent screen, custom scopes, dedicated quota or polling faster than 2 minutes.",
+  "composioTail": [
+    "In the Composio dashboard go to Auth Configs, click Create Auth Config, select the toolkit and choose OAuth2.",
+    "Copy the redirect URI shown in the Composio dashboard and register it in the provider's app settings.",
+    "Copy the Client ID and Client Secret from the provider app overview into the Composio auth config, and click Create.",
+    "Copy the resulting auth config ID (looks like ac_xxxx). Keep secrets out of source control.",
+    "Pass the auth config ID to your session: authConfigs: { [toolkit]: 'ac_xxxx' }. Toolkits not listed keep using Composio managed auth."
+  ]
+}

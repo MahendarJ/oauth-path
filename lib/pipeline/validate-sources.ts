@@ -45,6 +45,13 @@ export function validateClaimSources(
     if (typeof facts.source === "string" && facts.source.startsWith("http")) {
       allowedUrls.add(normalizeUrl(facts.source));
     }
+    // composioDocs: toolkit pages and the managed-vs-custom page it fetched
+    for (const key of ["toolkit", "mcpToolkit", "managedVsCustom"]) {
+      const nested = facts[key] as { url?: unknown; found?: unknown; fetched?: unknown } | null | undefined;
+      if (nested && typeof nested.url === "string" && (nested.found === true || nested.fetched === true)) {
+        allowedUrls.add(normalizeUrl(nested.url));
+      }
+    }
   }
 
   // Always allow canonical Composio managed auth doc URL

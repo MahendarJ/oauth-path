@@ -1,0 +1,32 @@
+[
+  { "slug": "linear", "claimId": "c3", "result": "confirmed", "note": "OAuth page: \"The access token is valid for 24 hours\".", "evidence": "https://linear.app/developers/oauth-2-0-authentication" },
+  { "slug": "linear", "claimId": "c5", "result": "confirmed", "note": "OAuth page: client-credentials app actor token \"is valid for 30 days\". The 1,000-token limit was not re-checked.", "evidence": "https://linear.app/developers/oauth-2-0-authentication" },
+  { "slug": "linear", "claimId": "c6", "result": "confirmed", "note": "Rate-limiting table: OAuth App, 5,000 per user (or app user) per hour.", "evidence": "https://linear.app/developers/rate-limiting" },
+  { "slug": "linear", "claimId": "c7", "result": "confirmed", "note": "Rate-limiting page: limits increase for workspace-level OAuth apps based on paid users.", "evidence": "https://linear.app/developers/rate-limiting" },
+  { "slug": "linear", "claimId": "c8", "result": "not-verified", "note": "Localhost appears only in example URLs. No rule saying \"any HTTPS URL\" was found in the fetched page.", "evidence": "https://linear.app/developers/oauth-2-0-authentication" },
+  { "slug": "linear", "claimId": "c11", "result": "corrected", "note": "True only for api.linear.app. mcp.linear.app advertises https://mcp.linear.app/register (re-checked by hand; see k6).", "evidence": "https://mcp.linear.app/.well-known/oauth-authorization-server" },
+  { "slug": "linear", "claimId": "k6", "result": "confirmed", "note": "Re-checked by hand: HTTP 200 with registration_endpoint https://mcp.linear.app/register.", "evidence": "https://mcp.linear.app/.well-known/oauth-authorization-server" },
+  { "slug": "linear", "claimId": "k5", "result": "confirmed", "note": "Composio toolkit page: Auth DCR_OAUTH, Composio-managed OAuth available: No.", "evidence": "https://docs.composio.dev/toolkits/linear_mcp" },
+
+  { "slug": "xero", "claimId": "c2", "result": "confirmed", "note": "FAQ: \"The use of wildcards in redirect URI is not supported.\"", "evidence": "https://developer.xero.com/faq" },
+  { "slug": "xero", "claimId": "c3", "result": "confirmed", "note": "FAQ: \"You can use up to 50 redirect URIs for your app.\"", "evidence": "https://developer.xero.com/faq" },
+  { "slug": "xero", "claimId": "c4", "result": "confirmed", "note": "FAQ: access tokens expire after 30 minutes; unused refresh tokens expire after 60 days.", "evidence": "https://developer.xero.com/faq" },
+  { "slug": "xero", "claimId": "c6", "result": "confirmed", "note": "FAQ: 5 concurrent, 60 per minute, 5000 per day per tenant; app limit 10,000 per minute.", "evidence": "https://developer.xero.com/faq" },
+  { "slug": "xero", "claimId": "c7", "result": "not-verified", "note": "The five tier names are in the FAQ. The per-tier connection limits (5, 50, 1,000, 10,000) were not found in the fetched text.", "evidence": "https://developer.xero.com/faq" },
+  { "slug": "xero", "claimId": "c10", "result": "not-verified", "note": "The fetched FAQ mentions an \"uncertified app limit\" (2 uncertified apps per organisation) but not certification per tier. The Hard production verdict leans on this claim.", "evidence": "https://developer.xero.com/faq" },
+  { "slug": "xero", "claimId": "c11", "result": "confirmed", "note": "FAQ: the connecting user needs Standard, Adviser or Administrator with the Connected Apps permission.", "evidence": "https://developer.xero.com/faq" },
+  { "slug": "xero", "claimId": "c14", "result": "confirmed", "note": "Re-checked by hand: api.xero.com/.well-known/oauth-authorization-server returns HTTP 401, no metadata.", "evidence": "https://api.xero.com/.well-known/oauth-authorization-server" },
+
+  { "slug": "notion", "claimId": "c2", "result": "confirmed", "note": "\"You are required to be a workspace owner to create a connection.\"", "evidence": "https://developers.notion.com/guides/get-started/authorization" },
+  { "slug": "notion", "claimId": "c3", "result": "corrected", "note": "Wrong. \"This can't be changed after creation\" refers to the installation scope (Any workspace / Selected workspaces), not the redirect URI.", "evidence": "https://developers.notion.com/guides/get-started/authorization" },
+  { "slug": "notion", "claimId": "c4", "result": "confirmed", "note": "\"The Authorization URL field populates after a public connection is submitted for review.\"", "evidence": "https://developers.notion.com/guides/get-started/authorization" },
+
+  { "slug": "aha", "claimId": "c15", "result": "confirmed", "note": "\"Up to 300 requests are allowed per minute, and up to 20 requests per second.\" The guide omits the per-second limit.", "evidence": "https://www.aha.io/api" },
+  { "slug": "aha", "claimId": "c19", "result": "corrected", "note": "Wrong. \"The API must be accessed using the account specific domain <yourcompany>.aha.io.\"", "evidence": "https://www.aha.io/api" },
+  { "slug": "aha", "claimId": "c4", "result": "corrected", "note": "The registration endpoint exists (re-checked by hand), but it belongs to Aha's MCP server (mcp.aha.io), not the REST API OAuth on <yourcompany>.aha.io. Claims c3-c9 describe the MCP server.", "evidence": "https://mcp.aha.io/.well-known/oauth-authorization-server" },
+  { "slug": "aha", "claimId": "c2", "result": "confirmed", "note": "\"the external application must be registered and the user must authorize the external application\".", "evidence": "https://www.aha.io/api" },
+
+  { "slug": "clockify", "claimId": "k1", "result": "confirmed", "note": "Composio toolkit page: Auth API_KEY, OAUTH2; managed OAuth: No. Clockify's API docs describe X-Api-Key / X-Addon-Token only. The conflict is flagged in the guide and stays unresolved.", "evidence": "https://docs.composio.dev/toolkits/clockify" },
+
+  { "slug": "spotify", "claimId": "c1", "result": "confirmed", "note": "Re-checked by hand: \"Newly-created apps begin in development mode.\"", "evidence": "https://developer.spotify.com/documentation/web-api/concepts/quota-modes" }
+]

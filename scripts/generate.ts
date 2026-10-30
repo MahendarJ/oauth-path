@@ -14,12 +14,14 @@ if (fs.existsSync(envPath) && typeof process.loadEnvFile === "function") {
 
 async function main() {
   const args = process.argv.slice(2);
-  const target = args[0];
+  const fresh = args.includes("--fresh");
+  const target = args.find((a) => !a.startsWith("--"));
 
   if (!target) {
     console.error("Usage: npm run generate -- \"<app name or url>\"");
     console.error("Example: npm run generate -- \"linear\"");
     console.error("Example: npm run generate -- \"https://clockify.me\"");
+    console.error("Add --fresh to regenerate a guide that is already cached.");
     process.exit(1);
   }
 
@@ -60,7 +62,7 @@ async function main() {
   }
 
   try {
-    await generateGuide(target, { onEvent: handleEvent });
+    await generateGuide(target, { onEvent: handleEvent, fresh });
     process.exit(0);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

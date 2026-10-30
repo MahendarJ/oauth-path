@@ -4,17 +4,17 @@ import * as fs from "fs";
 import * as path from "path";
 
 /**
- * Validates that the first line of a prompt markdown string contains "(v2".
+ * Validates that the first line of a prompt markdown string contains "(v2" or "(v3".
  */
 export function validatePromptFirstLine(firstLine: string, filename: string): void {
-  if (!firstLine.includes("(v2")) {
+  if (!firstLine.includes("(v2") && !firstLine.includes("(v3")) {
     throw new Error(
-      `Prompt file "${filename}" first line does not contain "(v2": "${firstLine}"`
+      `Prompt file "${filename}" first line does not contain "(v2" or "(v3": "${firstLine}"`
     );
   }
 }
 
-test("first line of every prompts/*.md must contain '(v2'", () => {
+test("first line of every prompts/*.md must contain '(v2' or '(v3'", () => {
   const promptsDir = path.join(process.cwd(), "prompts");
   assert.ok(fs.existsSync(promptsDir), "prompts directory must exist");
 
@@ -30,7 +30,7 @@ test("first line of every prompts/*.md must contain '(v2'", () => {
   }
 });
 
-test("validatePromptFirstLine fails if first line does not contain '(v2'", () => {
+test("validatePromptFirstLine fails if first line does not contain '(v2' or '(v3'", () => {
   assert.throws(
     () => validatePromptFirstLine("# Resolve agent: system prompt (v1)", "resolve.md"),
     /does not contain "\(v2"/
@@ -43,5 +43,9 @@ test("validatePromptFirstLine fails if first line does not contain '(v2'", () =>
 
   assert.doesNotThrow(() =>
     validatePromptFirstLine("# Resolve agent: system prompt (v2, no fetch tools)", "resolve.md")
+  );
+
+  assert.doesNotThrow(() =>
+    validatePromptFirstLine("# Resolve agent: system prompt (v3, no tools, two modes)", "resolve.md")
   );
 });

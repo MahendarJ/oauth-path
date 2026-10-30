@@ -11,19 +11,24 @@
     "probe": "tsx scripts/probe.ts",
     "test": "tsx --test tests/**/*.test.ts",
     "validate": "tsx scripts/validate.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "evidence": "tsx scripts/evidence.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@google/genai": "^2.32.0",
     "@types/node": "^26.6.6",
+    "@vercel/blob": "^2.8.2",
     "next": "^16.4.3",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0"
   }
 }

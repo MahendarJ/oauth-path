@@ -1,0 +1,477 @@
+{
+  "app": "Xero",
+  "slug": "xero",
+  "generatedAt": "2026-10-30",
+  "generatedBy": "gpt-oss-120b",
+  "generationLog": {
+    "model": "gpt-oss-120b",
+    "generatedAt": "2026-10-30T14:54:16.944Z"
+  },
+  "track": "bring-your-own",
+  "composio": {
+    "toolkitSlug": "xero",
+    "managedOAuthAvailable": false,
+    "claimIds": [
+      "k1"
+    ]
+  },
+  "verdict": {
+    "prototype": {
+      "difficulty": "Easy",
+      "handsOnTime": "unknown",
+      "waitTime": "none",
+      "headline": "You can register a Xero app and test with a demo company the same day."
+    },
+    "production": {
+      "difficulty": "Hard",
+      "handsOnTime": "unknown until certification questionnaire is prepared",
+      "waitTime": "unknown",
+      "headline": "Public launch may require app certification and tier upgrade, which involves a review process."
+    },
+    "confidence": "high on documented OAuth, redirect URI and tier rules; medium on certification timeline",
+    "summary": "Xero offers a self‑serve OAuth registration for testing, but a production launch that exceeds the free Starter tier or uses premium features triggers a security assessment and app certification review that can take several weeks."
+  },
+  "stages": [
+    {
+      "id": "s1",
+      "name": "Determine required connections and tier",
+      "owner": "developer",
+      "effort": "unknown",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Count the number of organisations that will connect. If ≤5 you can stay in the free Starter tier; otherwise you must select Core or higher.",
+          "claimIds": [
+            "c7"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "name": "Sign up for a Xero developer account",
+      "owner": "developer",
+      "effort": "unknown",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Create a free Xero account and log into the Xero Developer Portal.",
+          "claimIds": [
+            "c12"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "name": "Create the OAuth app",
+      "owner": "developer",
+      "effort": "unknown",
+      "wait": null,
+      "steps": [
+        {
+          "text": "In the Developer Portal click **Create App**, give it a name, and submit. You will receive a client ID and client secret.",
+          "claimIds": [
+            "c12"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "name": "Configure redirect URIs",
+      "owner": "developer",
+      "effort": "unknown",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Add up to 50 redirect URIs (no wildcards allowed). Each must be an absolute HTTPS URL.",
+          "claimIds": [
+            "c2",
+            "c3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s5",
+      "name": "Select OAuth flow",
+      "owner": "developer",
+      "effort": "unknown",
+      "wait": null,
+      "steps": [
+        {
+          "text": "For native or mobile apps use the Authorization Code flow with PKCE; single‑page apps are not supported.",
+          "claimIds": [
+            "c5"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s6",
+      "name": "Test the integration",
+      "owner": "developer",
+      "effort": "unknown",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Use the Xero demo company and API Explorer to exercise the OAuth flow and API calls without charge.",
+          "claimIds": [
+            "c13"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s7",
+      "name": "Upgrade tier / request premium features (if needed)",
+      "owner": "developer",
+      "effort": "unknown",
+      "wait": null,
+      "steps": [
+        {
+          "text": "If you need more than 5 connections or need premium endpoints (e.g., Journals, XPM API, Bulk Connections), select Core, Plus, Advanced or Enterprise tier and prepare for a security assessment.",
+          "claimIds": [
+            "c7",
+            "c8",
+            "c9"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s8",
+      "name": "Submit for app certification (required for Core+ tiers)",
+      "owner": "provider",
+      "effort": "N/A",
+      "wait": "unknown",
+      "steps": [
+        {
+          "text": "Complete the Xero app certification questionnaire and submit it via the Developer Portal. The provider will review and may request additional information.",
+          "claimIds": [
+            "c10"
+          ]
+        }
+      ]
+    }
+  ],
+  "requirements": [
+    "Xero developer account (free)",
+    "Registered OAuth app with client ID and client secret",
+    "Redirect URIs (HTTPS, up to 50, no wildcards)",
+    "User with Standard, Adviser or Administrator role to authorize the connection",
+    "Compliance with Xero’s tiered pricing model (Starter, Core, Plus, Advanced, Enterprise)",
+    "If using premium endpoints, a security assessment and use‑case approval (Advanced tier or higher)",
+    "App certification for Core tier and above"
+  ],
+  "blockers": [
+    {
+      "issue": "No dynamic client registration endpoint; app must be created manually in the portal.",
+      "whenItHits": "Immediately – you cannot auto‑register an app via metadata.",
+      "whatToDo": "Create the app manually in the Xero Developer Portal.",
+      "escalation": null,
+      "claimIds": [
+        "c14"
+      ]
+    },
+    {
+      "issue": "Exceeding the free Starter tier connection limit (5) blocks additional organisations.",
+      "whenItHits": "When you try to connect a 6th organisation.",
+      "whatToDo": "Upgrade to Core tier (or higher) and provide a credit‑card for billing.",
+      "escalation": "https://developer.xero.com/faq",
+      "claimIds": [
+        "c7"
+      ]
+    },
+    {
+      "issue": "Access to premium endpoints (Journals, XPM API, Bulk Connections) requires a security assessment.",
+      "whenItHits": "When you attempt to call those endpoints without the required tier.",
+      "whatToDo": "Apply for the Advanced tier and complete the security assessment.",
+      "escalation": null,
+      "claimIds": [
+        "c9"
+      ]
+    },
+    {
+      "issue": "App certification review may delay production launch.",
+      "whenItHits": "After you submit the certification questionnaire.",
+      "whatToDo": "Prepare documentation, answer the questionnaire, and wait for provider review.",
+      "escalation": "https://developer.xero.com/faq",
+      "claimIds": [
+        "c10"
+      ]
+    }
+  ],
+  "agentVsYou": {
+    "agentCanDo": [
+      "Generate a Composio Connect Link with the registered client ID/secret",
+      "Poll the connection status until ACTIVE",
+      "Run test API calls against the demo company and report results",
+      "Pre‑fill the certification questionnaire with known app details"
+    ],
+    "youMustDo": [
+      "Create a Xero developer account and register the OAuth app",
+      "Provide the redirect URIs and configure PKCE if needed",
+      "Supply a credit‑card for paid tiers and accept the new developer terms",
+      "Respond to any security‑assessment requests and provide use‑case justification"
+    ]
+  },
+  "claims": [
+    {
+      "id": "c1",
+      "text": "Xero supports OAuth 2.0 and requires it for all new integrations.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developer.xero.com/faq",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "text": "Wildcards are not supported in redirect URIs; each must be an absolute URI.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developer.xero.com/faq",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c3",
+      "text": "You can register up to 50 redirect URIs for a Xero app.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developer.xero.com/faq",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c4",
+      "text": "Access tokens expire after 30 minutes; unused refresh tokens expire after 60 days.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developer.xero.com/faq",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c5",
+      "text": "Xero supports PKCE for native apps; single‑page apps are not currently supported.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developer.xero.com/faq",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c6",
+      "text": "Rate limits: 5 concurrent calls, 60 calls per minute, 5 000 calls per day per connection; 10 000 calls per minute across all connections.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developer.xero.com/faq",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c7",
+      "text": "Starting 2 Mar 2026 Xero moves to tiered pricing (Starter, Core, Plus, Advanced, Enterprise) with connection limits (5, 50, 1 000, 10 000, unlimited).",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developer.xero.com/faq",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c8",
+      "text": "Certain app types (e.g., bespoke integrations, custom connections, financial services, conversion partners, franchise apps) are excluded from the new pricing model.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developer.xero.com/faq",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c9",
+      "text": "The Journals endpoint, Xero Practice Manager API, and Bulk Connections require a security assessment and use‑case approval, available only from the Advanced tier.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developer.xero.com/faq",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c10",
+      "text": "Xero provides an app certification process for Core, Plus, Advanced, and Enterprise tiers.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developer.xero.com/faq",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c11",
+      "text": "The user authorising the connection must have Standard, Adviser, or Administrator role with the Connected Apps permission.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developer.xero.com/faq",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c12",
+      "text": "To use the Xero API you must register an app to obtain a client ID and client secret; basic API‑key authentication is not supported.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developer.xero.com/faq",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c13",
+      "text": "The quickest way to try the API is to set up a demo company and use the API Explorer; there is no charge for the demo company.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://developer.xero.com/faq",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c14",
+      "text": "Xero does not expose a well‑known OAuth metadata endpoint; dynamic client registration is not advertised.",
+      "level": "tested",
+      "sources": [
+        {
+          "url": "https://api.xero.com/.well-known/oauth-authorization-server",
+          "fetchedAt": "2026-10-30",
+          "note": "Probe returned 401, no metadata discovered."
+        }
+      ]
+    },
+    {
+      "id": "k1",
+      "text": "Composio's XERO toolkit lists auth OAUTH2; Composio-managed OAuth available: no.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/toolkits/xero",
+          "fetchedAt": "2026-10-30",
+          "note": "Toolkit page header, checked on this run."
+        }
+      ]
+    },
+    {
+      "id": "k4",
+      "text": "Managed apps share provider quota across all Composio users and enforce a 2-minute minimum polling interval for triggers; your own app gets dedicated quota and faster polling where supported.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "fetchedAt": "2026-10-30",
+          "note": "Added in code from Composio's docs; exact wording checked on this run."
+        }
+      ]
+    }
+  ],
+  "uncertain": [
+    "Exact review timeline for the app certification process (weeks vs days).",
+    "Whether a formal security assessment is required for all apps in Core/Plus tiers or only for premium features.",
+    "If a paid tier is mandatory for any production use beyond the free Starter tier."
+  ],
+  "tested": [
+    "OAuth metadata endpoint not found (c14)."
+  ],
+  "notTested": [
+    "Availability of a dedicated sandbox environment beyond the demo company."
+  ],
+  "auditLog": [
+    {
+      "was": "\"handsOnTime\":\"30-45 min\"",
+      "now": "\"handsOnTime\":\"unknown\"",
+      "change": "downgraded"
+    },
+    {
+      "was": "\"waitTime\":\"up to 4 weeks for review\"",
+      "now": "\"waitTime\":\"unknown\"",
+      "change": "downgraded"
+    },
+    {
+      "was": "\"effort\":\"10 min\" (stage s1)",
+      "now": "\"effort\":\"unknown\" (stage s1)",
+      "change": "downgraded"
+    },
+    {
+      "was": "\"effort\":\"5 min\" (stage s2)",
+      "now": "\"effort\":\"unknown\" (stage s2)",
+      "change": "downgraded"
+    },
+    {
+      "was": "\"effort\":\"10-15 min\" (stage s3)",
+      "now": "\"effort\":\"unknown\" (stage s3)",
+      "change": "downgraded"
+    },
+    {
+      "was": "\"effort\":\"5 min\" (stage s4)",
+      "now": "\"effort\":\"unknown\" (stage s4)",
+      "change": "downgraded"
+    },
+    {
+      "was": "\"effort\":\"5 min\" (stage s5)",
+      "now": "\"effort\":\"unknown\" (stage s5)",
+      "change": "downgraded"
+    },
+    {
+      "was": "\"effort\":\"15 min\" (stage s6)",
+      "now": "\"effort\":\"unknown\" (stage s6)",
+      "change": "downgraded"
+    },
+    {
+      "was": "\"effort\":\"30 min\" (stage s7)",
+      "now": "\"effort\":\"unknown\" (stage s7)",
+      "change": "downgraded"
+    },
+    {
+      "was": "\"effort\":\"N/A\" (stage s8)",
+      "now": "\"effort\":\"N/A\" (stage s8)",
+      "change": "confirmed"
+    },
+    {
+      "was": "Composio and MCP facts as drafted by the model",
+      "now": "Claims k1, k4 added in code from Composio's docs and probes on this run",
+      "change": "added (in code)"
+    }
+  ],
+  "nextAction": "Create a Xero developer account, register your OAuth app, configure redirect URIs, and test against the demo company. If you need more than 5 connections or premium features, plan for a tier upgrade and the certification review.",
+  "composioTail": [
+    "In the Composio dashboard go to Auth Configs, click Create Auth Config, select the toolkit and choose OAuth2.",
+    "Copy the redirect URI shown in the Composio dashboard and register it in the provider's app settings.",
+    "Copy the Client ID and Client Secret from the provider app overview into the Composio auth config, and click Create.",
+    "Copy the resulting auth config ID (looks like ac_xxxx). Keep secrets out of source control.",
+    "Pass the auth config ID to your session: authConfigs: { [toolkit]: 'ac_xxxx' }. Toolkits not listed keep using Composio managed auth."
+  ]
+}

@@ -3,8 +3,10 @@ import { protectedResource } from "./protected-resource";
 import { authorizeEndpoint } from "./authorize-endpoint";
 import { dcrAdvertised } from "./dcr-advertised";
 import { composioTrack, normalizeSlug } from "./composio-track";
+import { composioDocs } from "./composio-docs";
 import { ProbeObservation } from "./types";
 import { validateSafeUrl } from "./ssrf";
+import { registrableDomain } from "../pipeline/resolve";
 
 export * from "./types";
 export * from "./ssrf";
@@ -13,6 +15,7 @@ export * from "./protected-resource";
 export * from "./authorize-endpoint";
 export * from "./dcr-advertised";
 export * from "./composio-track";
+export * from "./composio-docs";
 
 export async function runAllProbes(
   origin: string,
@@ -49,10 +52,17 @@ export async function runAllProbes(
   const dcrObs = dcrAdvertised(metadata, cleanOrigin);
   observations.push(dcrObs);
 
-  // 6. Composio track lookup
+  // 6. MCP server OAuth metadata on mcp.<provider domain>, where many providers host their MCP server
+  const mcpOrigin = `https://mcp.${registrableDomain(new URL(cleanOrigin).hostname)}`;
+  if (mcpOrigin !== cleanOrigin) {
+    const mcpObs = await oauthMetadata(mcpOrigin);
+    observations.push({ ...mcpObs, probe: "mcpOauthMetadata" });
+  }
+
+  // 7. Composio track lookup (catalog snapshot) and live toolkit docs
   const slug = explicitSlug || normalizeSlug(origin);
-  const composioObs = await composioTrack(slug);
-  observations.push(composioObs);
+  const [composioObs, composioDocsObs] = await Promise.all([composioTrack(slug), composioDocs(slug)]);
+  observations.push(composioObs, composioDocsObs);
 
   return observations;
 }

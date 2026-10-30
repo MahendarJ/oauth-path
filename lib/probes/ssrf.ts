@@ -1,7 +1,9 @@
 import * as dns from "dns/promises";
 import * as net from "net";
 
-const MAX_RESPONSE_BYTES = 1024 * 1024; // 1MB
+const MAX_RESPONSE_BYTES = 1024 * 1024; // 1MB default (probes)
+/** Documentation pages can be large single-page API references; their text is truncated after fetching. */
+export const MAX_DOC_BYTES = 5 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 8000; // 8 seconds
 
 const BLOCKED_HOST_SUFFIXES = [
@@ -233,8 +235,9 @@ export function redactUrlQuery(rawUrl: string, baseOrigin?: string): SafeLocatio
  */
 export async function safeFetch(
   urlString: string,
-  init?: { headers?: Record<string, string> }
+  init?: { headers?: Record<string, string>; maxBytes?: number }
 ): Promise<SafeFetchResponse> {
+  const maxBytes = init?.maxBytes ?? MAX_RESPONSE_BYTES;
   const safeUrl = await validateSafeUrl(urlString);
 
   const controller = new AbortController();
@@ -263,8 +266,8 @@ export async function safeFetch(
 
     // Check Content-Length cap if provided
     const contentLength = response.headers.get("content-length");
-    if (contentLength && parseInt(contentLength, 10) > MAX_RESPONSE_BYTES) {
-      throw new Error(`Response exceeds 1MB cap (Content-Length: ${contentLength} bytes)`);
+    if (contentLength && parseInt(contentLength, 10) > maxBytes) {
+      throw new Error(`Response exceeds ${maxBytes} byte cap (Content-Length: ${contentLength} bytes)`);
     }
 
     // Read response body with 1MB cap
@@ -279,9 +282,9 @@ export async function safeFetch(
         if (done) break;
         if (value) {
           bytesRead += value.length;
-          if (bytesRead > MAX_RESPONSE_BYTES) {
+          if (bytesRead > maxBytes) {
             reader.cancel();
-            throw new Error(`Response exceeded 1MB cap during streaming`);
+            throw new Error(`Response exceeded ${maxBytes} byte cap during streaming`);
           }
           chunks.push(value);
         }

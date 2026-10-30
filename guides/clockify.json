@@ -1,0 +1,237 @@
+{
+  "app": "Clockify",
+  "slug": "clockify",
+  "generatedAt": "2026-10-30",
+  "generatedBy": "gpt-oss-120b",
+  "generationLog": {
+    "model": "gpt-oss-120b",
+    "generatedAt": "2026-10-30T14:52:34.640Z"
+  },
+  "track": "bring-your-own",
+  "composio": {
+    "toolkitSlug": "clockify",
+    "managedOAuthAvailable": false,
+    "claimIds": [
+      "k1"
+    ]
+  },
+  "verdict": {
+    "prototype": {
+      "difficulty": "Gated",
+      "handsOnTime": "unknown",
+      "waitTime": "none",
+      "headline": "Unconfirmed: Clockify does not expose an OAuth flow; you must use API‑key authentication."
+    },
+    "production": {
+      "difficulty": "Gated",
+      "handsOnTime": "unknown",
+      "waitTime": "none",
+      "headline": "Unconfirmed: No OAuth app can be registered for Clockify; integration must rely on API keys."
+    },
+    "confidence": "low: Composio lists OAuth for this toolkit but the provider sources found none (see blockers). Model's own assessment: high that Clockify lacks OAuth (doc‑confirmed and tested), but uncertain because Composio lists it as an OAuth toolkit.",
+    "summary": "Clockify authenticates exclusively via API keys. The well‑known OAuth endpoints return 200 with an error indicating no OAuth configuration, and the documentation never mentions OAuth. Therefore an OAuth app cannot be created. If you need OAuth‑style consent, you must contact Clockify support to confirm whether they plan to add it."
+  },
+  "stages": [
+    {
+      "id": "s1",
+      "name": "Confirm authentication method",
+      "owner": "developer",
+      "effort": "unknown",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Read the Clockify API docs to see that authentication is performed with an X‑Api‑Key or X‑Addon‑Token header.",
+          "claimIds": [
+            "c1"
+          ]
+        },
+        {
+          "text": "Verify that no OAuth well‑known endpoint exists (probe result).",
+          "claimIds": [
+            "c2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "name": "Configure Composio with an API key",
+      "owner": "agent",
+      "effort": "unknown",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Ask the developer to generate an API key in Clockify (Profile → Settings → API Keys).",
+          "claimIds": [
+            "c1"
+          ]
+        },
+        {
+          "text": "Enter the API key into the Composio connection configuration (auth type = API_KEY).",
+          "claimIds": [
+            "c3"
+          ]
+        }
+      ]
+    }
+  ],
+  "requirements": [
+    "Clockify account with permission to create API keys.",
+    "Generated X‑Api‑Key (or X‑Addon‑Token) from the Clockify UI."
+  ],
+  "blockers": [
+    {
+      "issue": "No OAuth flow is provided by Clockify.",
+      "whenItHits": "Any attempt to register an OAuth client.",
+      "whatToDo": "Use API‑key authentication instead; if OAuth is required for your product, contact Clockify support to ask about future support.",
+      "escalation": "https://clockify.me/help/troubleshooting/troubleshooting-sso",
+      "claimIds": [
+        "c2",
+        "c4"
+      ]
+    },
+    {
+      "issue": "Unclear whether Clockify offers OAuth for its API",
+      "whenItHits": "Before you build: it decides whether you register an OAuth app or use an API key",
+      "whatToDo": "Check Clockify's developer documentation for OAuth app registration, and ask Composio which OAuth flow its CLOCKIFY toolkit uses. Until that is answered, an API key is the documented route.",
+      "escalation": "https://docs.composio.dev/toolkits/clockify",
+      "claimIds": [
+        "k1"
+      ]
+    }
+  ],
+  "agentVsYou": {
+    "agentCanDo": [
+      "Guide the developer through the API‑key generation steps.",
+      "Create the Composio connection record with the supplied API key."
+    ],
+    "youMustDo": [
+      "Log into Clockify, generate an API key, and paste it into the Composio config.",
+      "Handle any workspace‑level rate‑limit considerations (see docs)."
+    ]
+  },
+  "claims": [
+    {
+      "id": "c1",
+      "text": "Clockify API authentication is performed with an X‑Api‑Key or X‑Addon‑Token header; OAuth is not mentioned in the official docs.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.clockify.me/",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "text": "Probing https://api.clockify.me/.well-known/oauth-authorization-server returned 200 with an error stating no well‑known OAuth authorization server or OpenID configuration found.",
+      "level": "tested",
+      "sources": [
+        {
+          "url": "https://api.clockify.me/.well-known/oauth-authorization-server",
+          "fetchedAt": "2026-10-30",
+          "note": "probe oauthMetadata"
+        }
+      ]
+    },
+    {
+      "id": "c3",
+      "text": "Composio catalog lists Clockify under the \"bring‑your‑own\" track and indicates that managed OAuth is not available.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/toolkits/managed-auth",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c4",
+      "text": "Dynamic Client Registration advertisement status is unknown; the probe did not find a registration endpoint.",
+      "level": "tested",
+      "sources": [
+        {
+          "url": "https://api.clockify.me",
+          "fetchedAt": "2026-10-30",
+          "note": "probe dcrAdvertised"
+        }
+      ]
+    },
+    {
+      "id": "c5",
+      "text": "Clockify rate limits depend on workspace plan (e.g., FREE: 30 req/h, ENTERPRISE: 50 req/s).",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.clockify.me/",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "k1",
+      "text": "Composio's CLOCKIFY toolkit lists auth API_KEY, OAUTH2; Composio-managed OAuth available: no.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/toolkits/clockify",
+          "fetchedAt": "2026-10-30",
+          "note": "Toolkit page header, checked on this run."
+        }
+      ]
+    },
+    {
+      "id": "k4",
+      "text": "Managed apps share provider quota across all Composio users and enforce a 2-minute minimum polling interval for triggers; your own app gets dedicated quota and faster polling where supported.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "fetchedAt": "2026-10-30",
+          "note": "Added in code from Composio's docs; exact wording checked on this run."
+        }
+      ]
+    }
+  ],
+  "uncertain": [
+    "Composio lists Clockify as an OAuth toolkit, but the provider documentation shows no OAuth support. This conflict needs clarification from Clockify or Composio.",
+    "Sources conflict: Composio's CLOCKIFY toolkit lists API_KEY, OAUTH2 (k1), but the provider pages fetched here describe no OAuth flow for the API and no OAuth metadata was found. This guide does not settle which is right."
+  ],
+  "tested": [
+    "OAuth well‑known metadata not found at https://api.clockify.me/.well-known/oauth-authorization-server.",
+    "Dynamic client registration endpoint not advertised."
+  ],
+  "notTested": [
+    "Attempt to register an OAuth client via a Clockify developer portal (none exists)."
+  ],
+  "auditLog": [
+    {
+      "was": "\"effort\":\"10 min\"",
+      "now": "\"effort\":\"unknown\"",
+      "change": "downgraded"
+    },
+    {
+      "was": "\"effort\":\"5 min\"",
+      "now": "\"effort\":\"unknown\"",
+      "change": "downgraded"
+    },
+    {
+      "was": "high that Clockify lacks OAuth (doc‑confirmed and tested), but uncertain because Composio lists it as an OAuth toolkit.",
+      "now": "low: Composio lists OAuth for this toolkit but the provider sources found none (see blockers). Model's own assessment: high that Clockify lacks OAuth (doc‑confirmed and tested), but uncertain because Composio lists it as an OAuth toolkit.",
+      "change": "flagged (in code: source conflict)"
+    },
+    {
+      "was": "Composio and MCP facts as drafted by the model",
+      "now": "Claims k1, k4 added in code from Composio's docs and probes on this run",
+      "change": "added (in code)"
+    }
+  ],
+  "nextAction": "Generate an API key in Clockify and configure the Composio connection with it. If OAuth is a hard requirement, open a support ticket with Clockify to ask whether an OAuth flow will be added.",
+  "composioTail": [
+    "In the Composio dashboard go to Auth Configs, click Create Auth Config, select the toolkit and choose OAuth2.",
+    "Copy the redirect URI shown in the Composio dashboard and register it in the provider's app settings.",
+    "Copy the Client ID and Client Secret from the provider app overview into the Composio auth config, and click Create.",
+    "Copy the resulting auth config ID (looks like ac_xxxx). Keep secrets out of source control.",
+    "Pass the auth config ID to your session: authConfigs: { [toolkit]: 'ac_xxxx' }. Toolkits not listed keep using Composio managed auth."
+  ]
+}

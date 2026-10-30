@@ -1,0 +1,548 @@
+{
+  "app": "Linear",
+  "slug": "linear",
+  "generatedAt": "2026-10-30",
+  "generatedBy": "gpt-oss-120b",
+  "generationLog": {
+    "model": "gpt-oss-120b",
+    "generatedAt": "2026-10-30T14:32:17.920Z"
+  },
+  "track": "managed",
+  "composio": {
+    "toolkitSlug": "linear",
+    "managedOAuthAvailable": true,
+    "claimIds": [
+      "k1",
+      "k2"
+    ]
+  },
+  "verdict": {
+    "prototype": {
+      "difficulty": "Easy",
+      "handsOnTime": "15 min",
+      "waitTime": "none",
+      "headline": "No OAuth app needed to start: connect through Composio's managed Linear app."
+    },
+    "production": {
+      "difficulty": "Easy",
+      "handsOnTime": "30-45 min",
+      "waitTime": "none",
+      "headline": "Linear OAuth can be set up quickly, but review or paid‑plan requirements are uncertain."
+    },
+    "confidence": "high on OAuth support, token lifetimes and rate‑limit details; uncertain about any hidden app‑review or paid‑plan requirements",
+    "summary": "Linear offers a fully self‑serve OAuth2 flow. You can create an app, configure redirects, and start making API calls without a provider review. Operational limits are request quotas (5 000 req/h per OAuth app) and optional client‑credentials token caps."
+  },
+  "stages": [
+    {
+      "id": "composio-managed",
+      "name": "Connect through Composio's managed Linear app",
+      "owner": "agent",
+      "effort": "15 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Create a Composio session for your user. Do not pass an auth config for linear, so the managed app is used.",
+          "claimIds": [
+            "k2"
+          ]
+        },
+        {
+          "text": "Send the user a Connect Link. They approve on Linear's consent screen, which shows Composio's app name.",
+          "claimIds": [
+            "k7"
+          ]
+        },
+        {
+          "text": "Run one test tool call to confirm the connection works.",
+          "claimIds": []
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "name": "Determine whether the managed Linear integration meets your needs",
+      "owner": "developer",
+      "effort": "10 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "If the default Composio managed Linear OAuth integration provides the scopes and quota you need, you can skip the remaining stages.",
+          "claimIds": []
+        },
+        {
+          "text": "Otherwise, proceed to create your own Linear OAuth application.",
+          "claimIds": []
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "name": "Create a Linear OAuth2 application",
+      "owner": "developer",
+      "effort": "15‑20 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "In a Linear workspace where you are an admin, go to **Settings → API** and click **Create a new OAuth2 Application**.",
+          "claimIds": [
+            "c1"
+          ]
+        },
+        {
+          "text": "Enter a name and description (shown on the consent screen) and save the app.",
+          "claimIds": [
+            "c1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "name": "Configure redirect URIs",
+      "owner": "developer",
+      "effort": "5‑10 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Add the exact redirect URI(s) your integration will use. Linear accepts any HTTPS URL and also localhost URLs (e.g., http://localhost:3000/oauth/callback).",
+          "claimIds": [
+            "c8"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "name": "Select grant type and optional PKCE",
+      "owner": "developer",
+      "effort": "5 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "For typical user‑auth flows keep the default **authorization_code** grant. Enable **PKCE** if you prefer a secret‑less flow.",
+          "claimIds": [
+            "c2"
+          ]
+        },
+        {
+          "text": "If you need server‑to‑server access, enable **client_credentials** tokens (requires toggling the option in the app settings).",
+          "claimIds": [
+            "c5"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s5",
+      "name": "Test the authorization code exchange",
+      "owner": "agent",
+      "effort": "5‑10 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Generate an authorization URL for the newly created app, complete the login flow, and capture the authorization code.",
+          "claimIds": []
+        },
+        {
+          "text": "Exchange the code for an access token (valid for 24 hours) and a refresh token.",
+          "claimIds": [
+            "c3",
+            "c4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s6",
+      "name": "Make a sample API request",
+      "owner": "agent",
+      "effort": "5 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Call the Linear GraphQL endpoint (`https://api.linear.app/graphql`) with the access token and verify a successful response.",
+          "claimIds": []
+        }
+      ]
+    },
+    {
+      "id": "s7",
+      "name": "(Optional) Enable and test client‑credentials tokens",
+      "owner": "developer",
+      "effort": "5‑10 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "Toggle **client credentials tokens** in the app settings, then request a token via `POST https://api.linear.app/oauth/token` with `grant_type=client_credentials`.",
+          "claimIds": [
+            "c5"
+          ]
+        },
+        {
+          "text": "Remember the token is valid for 30 days and you can have up to 1 000 active client‑credentials tokens in parallel.",
+          "claimIds": [
+            "c5"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s8",
+      "name": "Review rate limits and plan for scaling",
+      "owner": "developer",
+      "effort": "5 min",
+      "wait": null,
+      "steps": [
+        {
+          "text": "OAuth apps are limited to 5 000 requests per hour per user. If you need higher limits, contact Linear support to request an increase.",
+          "claimIds": [
+            "c6"
+          ]
+        },
+        {
+          "text": "Paid workspaces may receive dynamic higher limits based on the number of paid users.",
+          "claimIds": [
+            "c7"
+          ]
+        }
+      ]
+    }
+  ],
+  "requirements": [
+    "Admin access to a Linear workspace to create an OAuth app",
+    "HTTPS redirect URI (or localhost for development)",
+    "Client ID and client secret from the Linear app settings",
+    "If using PKCE, a code verifier/challenge pair",
+    "If using client‑credentials, enable the option in the app settings",
+    "If you want Linear's MCP server rather than its API, that is a separate Composio toolkit (LINEAR_MCP) with its own auth (k5)."
+  ],
+  "blockers": [
+    {
+      "issue": "If you need more than 5 000 requests per hour, Linear may deny higher quota without a paid plan.",
+      "whenItHits": "When your integration approaches the hourly limit",
+      "whatToDo": "Open a support ticket with Linear to request a higher quota; consider using a paid workspace for dynamic limits.",
+      "escalation": "https://linear.app/developers/rate-limiting",
+      "claimIds": [
+        "c6",
+        "c7"
+      ]
+    },
+    {
+      "issue": "Client‑credentials token limit of 1 000 active tokens may be hit in large‑scale server‑to‑server deployments.",
+      "whenItHits": "When you generate many parallel tokens",
+      "whatToDo": "Reuse a single token per deployment or rotate tokens less frequently; ensure you stay within the 1 000 token cap.",
+      "escalation": null,
+      "claimIds": [
+        "c5"
+      ]
+    }
+  ],
+  "agentVsYou": {
+    "agentCanDo": [
+      "Generate a Connect Link for the Linear OAuth app",
+      "Poll the connection status until the user authorizes the app",
+      "Exchange authorization codes for access and refresh tokens",
+      "Perform sample GraphQL API calls with the obtained token"
+    ],
+    "youMustDo": [
+      "Log into a Linear workspace as an admin and create the OAuth app",
+      "Configure redirect URIs and enable optional features (PKCE, client‑credentials)",
+      "Store the client secret securely and rotate it if compromised",
+      "Request higher rate limits or quota increases from Linear support if needed"
+    ]
+  },
+  "claims": [
+    {
+      "id": "c1",
+      "text": "Linear supports OAuth2 authentication for building integrations.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://linear.app/developers/oauth-2-0-authentication",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "text": "Linear supports the PKCE flow for OAuth2.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://linear.app/developers/oauth-2-0-authentication",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c3",
+      "text": "Access tokens issued by Linear are valid for 24 hours.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://linear.app/developers/oauth-2-0-authentication",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c4",
+      "text": "Linear returns a refresh token that can be used to obtain new access tokens.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://linear.app/developers/oauth-2-0-authentication",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c5",
+      "text": "Linear supports the client_credentials grant; tokens are valid for 30 days and up to 1 000 active tokens are allowed per app.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://linear.app/developers/oauth-2-0-authentication",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c6",
+      "text": "OAuth apps are limited to 5 000 requests per hour per user.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://linear.app/developers/rate-limiting",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c7",
+      "text": "Linear applies dynamic rate limits for workspace‑level OAuth apps based on the number of paid users.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://linear.app/developers/rate-limiting",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c8",
+      "text": "Redirect URIs may be any HTTPS URL or a localhost URL (e.g., http://localhost:3000/oauth/callback).",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://linear.app/developers/oauth-2-0-authentication",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "c11",
+      "text": "Linear does not advertise a Dynamic Client Registration endpoint.",
+      "level": "tested",
+      "sources": [
+        {
+          "url": "https://api.linear.app",
+          "fetchedAt": null,
+          "note": "Dynamic Client Registration endpoint is not advertised (probe dcrAdvertised)."
+        }
+      ]
+    },
+    {
+      "id": "c12",
+      "text": "OAuth metadata is discoverable at https://api.linear.app/.well-known/oauth-authorization-server.",
+      "level": "tested",
+      "sources": [
+        {
+          "url": "https://api.linear.app/.well-known/oauth-authorization-server",
+          "fetchedAt": "2026-10-30",
+          "note": "Metadata discovered with issuer, authorization_endpoint, token_endpoint, etc."
+        }
+      ]
+    },
+    {
+      "id": "c13",
+      "text": "The authorization endpoint returns HTTP 200 for an invalid client_id (inconclusive about validation).",
+      "level": "tested",
+      "sources": [
+        {
+          "url": "https://linear.app/oauth/authorize?client_id=INVALID&response_type=code&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback",
+          "fetchedAt": "2026-10-30",
+          "note": "Endpoint returned HTTP 200 HTML; response is inconclusive about client validity."
+        }
+      ]
+    },
+    {
+      "id": "c14",
+      "text": "Linear does not expose a protected‑resource discovery endpoint.",
+      "level": "tested",
+      "sources": [
+        {
+          "url": "https://api.linear.app/.well-known/oauth-protected-resource",
+          "fetchedAt": "2026-10-30",
+          "note": "Endpoint returned 404, indicating no protected resource discovery."
+        }
+      ]
+    },
+    {
+      "id": "c15",
+      "text": "Composio lists Linear as a managed OAuth toolkit.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/toolkits/managed-auth",
+          "fetchedAt": "2026-10-30"
+        }
+      ]
+    },
+    {
+      "id": "k1",
+      "text": "Composio's LINEAR toolkit lists auth OAUTH2, API_KEY; Composio-managed OAuth available: yes.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/toolkits/linear",
+          "fetchedAt": "2026-10-30",
+          "note": "Toolkit page header, checked on this run."
+        }
+      ]
+    },
+    {
+      "id": "k2",
+      "text": "With a Composio managed app you do not register your own OAuth app; Composio stores and refreshes the connected-account credentials.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "fetchedAt": "2026-10-30",
+          "note": "Added in code from Composio's docs; exact wording checked on this run."
+        }
+      ]
+    },
+    {
+      "id": "k3",
+      "text": "Composio's current docs say managed apps can stay in production when their consent branding, scopes and shared provider quotas fit your product.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "fetchedAt": "2026-10-30",
+          "note": "Added in code from Composio's docs; exact wording checked on this run."
+        }
+      ]
+    },
+    {
+      "id": "k4",
+      "text": "Managed apps share provider quota across all Composio users and enforce a 2-minute minimum polling interval for triggers; your own app gets dedicated quota and faster polling where supported.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "fetchedAt": "2026-10-30",
+          "note": "Added in code from Composio's docs; exact wording checked on this run."
+        }
+      ]
+    },
+    {
+      "id": "k7",
+      "text": "With a managed app, users see Composio's app name on the provider's OAuth consent screen.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+          "fetchedAt": "2026-10-30",
+          "note": "Added in code from Composio's docs; exact wording checked on this run."
+        }
+      ]
+    },
+    {
+      "id": "k5",
+      "text": "Composio also has a separate LINEAR_MCP toolkit (auth DCR_OAUTH; Composio-managed OAuth available: no). Its setup is separate from LINEAR.",
+      "level": "doc-confirmed",
+      "sources": [
+        {
+          "url": "https://docs.composio.dev/toolkits/linear_mcp",
+          "fetchedAt": "2026-10-30",
+          "note": "Toolkit page header, checked on this run."
+        }
+      ]
+    },
+    {
+      "id": "k6",
+      "text": "mcp.linear.app publishes OAuth server metadata with a dynamic client registration endpoint (https://mcp.linear.app/register), so an MCP client can register itself without a manually created app.",
+      "level": "tested",
+      "sources": [
+        {
+          "url": "https://mcp.linear.app/.well-known/oauth-authorization-server",
+          "fetchedAt": "2026-10-30",
+          "note": "GET returned HTTP 200 with OAuth metadata on this run."
+        }
+      ]
+    }
+  ],
+  "uncertain": [
+    "Whether Linear requires a paid workspace tier for OAuth app creation.",
+    "Whether Linear ever enforces an app‑review or verification step.",
+    "Older Composio guidance reportedly said to use managed apps in development and your own app in production; the current managed-vs-custom page says managed apps can stay in production (k3). The older page was not fetched here, so confirm with Composio for your case."
+  ],
+  "tested": [
+    "c11",
+    "c12",
+    "c13",
+    "c14",
+    "mcp.linear.app publishes OAuth server metadata with a dynamic client registration endpoint (https://mcp.linear.app/register), so an MCP client can register itself without a manually created app. (k6)"
+  ],
+  "notTested": [
+    "Validate that Linear rejects an unregistered redirect_uri after user login (requires a Linear account).",
+    "End‑to‑end creation of a Linear app and connection via Composio."
+  ],
+  "auditLog": [
+    {
+      "was": "Linear OAuth can be set up instantly with no review.",
+      "now": "Linear OAuth can be set up quickly, but review or paid‑plan requirements are uncertain.",
+      "change": "corrected"
+    },
+    {
+      "was": "Use Composio to generate a Connect Link for the newly created app, complete the login flow, and capture the authorization code.",
+      "now": "Generate an authorization URL for the newly created app, complete the login flow, and capture the authorization code.",
+      "change": "corrected"
+    },
+    {
+      "was": "claimIds\": [\"c12\"]",
+      "now": "claimIds\": []",
+      "change": "removed"
+    },
+    {
+      "was": "claimIds\": [\"c6\",\"c7\"]",
+      "now": "claimIds\": []",
+      "change": "removed"
+    },
+    {
+      "was": "Prototype: Linear OAuth can be set up quickly, but review or paid‑plan requirements are uncertain.",
+      "now": "Prototype: No OAuth app needed to start: connect through Composio's managed Linear app.",
+      "change": "corrected (in code: managed track)"
+    },
+    {
+      "was": "Start with Composio's managed Linear OAuth integration. If you need custom scopes, higher quotas, or client‑credentials tokens, create your own Linear OAuth app following the stages above.",
+      "now": "Prototype today with Composio's managed Linear app: create a session and send your user a Connect Link. Register your own Linear OAuth app only if you need your own name on the consent screen, custom scopes, dedicated quota or polling faster than 2 minutes.",
+      "change": "corrected (in code: managed track)"
+    },
+    {
+      "was": "Composio and MCP facts as drafted by the model",
+      "now": "Claims k1, k2, k3, k4, k7, k5, k6 added in code from Composio's docs and probes on this run",
+      "change": "added (in code)"
+    }
+  ],
+  "nextAction": "Prototype today with Composio's managed Linear app: create a session and send your user a Connect Link. Register your own Linear OAuth app only if you need your own name on the consent screen, custom scopes, dedicated quota or polling faster than 2 minutes.",
+  "composioTail": [
+    "In the Composio dashboard go to Auth Configs, click Create Auth Config, select the toolkit and choose OAuth2.",
+    "Copy the redirect URI shown in the Composio dashboard and register it in the provider's app settings.",
+    "Copy the Client ID and Client Secret from the provider app overview into the Composio auth config, and click Create.",
+    "Copy the resulting auth config ID (looks like ac_xxxx). Keep secrets out of source control.",
+    "Pass the auth config ID to your session: authConfigs: { [toolkit]: 'ac_xxxx' }. Toolkits not listed keep using Composio managed auth."
+  ]
+}

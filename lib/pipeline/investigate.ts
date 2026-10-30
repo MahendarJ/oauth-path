@@ -6,6 +6,7 @@ import { ResolvedApp } from "./resolve";
 import { SourceSnapshot } from "./fetch-sources";
 import { validateClaimSources } from "./validate-sources";
 import { generateJson } from "./llm";
+import { saveDebug } from "./debug";
 
 const GUIDE_SCHEMA_SUMMARY = {
   type: "object",
@@ -59,9 +60,21 @@ export async function investigateApp(
     path.join(process.cwd(), "prompts/investigate.md"),
     "utf-8"
   );
-  const goldGuide = JSON.parse(
+  const gold = JSON.parse(
     fs.readFileSync(path.join(process.cwd(), "guides/_gold.json"), "utf-8")
-  );
+  ) as Guide;
+  // An excerpt keeps the example's structure, depth and honesty at about a quarter of the tokens,
+  // so the request fits free-tier per-minute limits.
+  const goldGuide = {
+    note: "Excerpt of the Spotify gold guide: arrays are trimmed to their first entries.",
+    ...gold,
+    stages: gold.stages.slice(0, 2),
+    blockers: gold.blockers.slice(0, 1),
+    claims: gold.claims.slice(0, 4),
+    uncertain: gold.uncertain.slice(0, 2),
+    notTested: gold.notTested.slice(0, 2),
+    auditLog: gold.auditLog.slice(0, 1),
+  };
 
   const userPayload = JSON.stringify({
     resolved,
@@ -76,7 +89,6 @@ export async function investigateApp(
   const firstResult = await generateJson<unknown>({
     system,
     user: userPayload,
-    grounded: false,
   });
 
   try {
@@ -86,11 +98,16 @@ export async function investigateApp(
   } catch (err: unknown) {
     // Attempt 2 (Repair): Send validation error back once as a JSON user message
     const errorText = err instanceof Error ? err.message : String(err);
+    saveDebug(resolved.slug, "investigate-attempt1", { error: errorText, output: firstResult });
+    // The repair keeps the schema, the example and the failed draft so the model fixes it instead of starting over
     const repairUser = JSON.stringify({
       resolved,
       sources: snapshots,
       probes,
       composioTrack: track,
+      schema: GUIDE_SCHEMA_SUMMARY,
+      goldGuide,
+      previousOutput: firstResult,
       error: errorText,
       repair: true,
     });
@@ -98,7 +115,6 @@ export async function investigateApp(
     const repairResult = await generateJson<unknown>({
       system,
       user: repairUser,
-      grounded: false,
     });
 
     try {

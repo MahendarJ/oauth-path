@@ -1,5 +1,3 @@
-import * as fs from "fs";
-import * as path from "path";
 import { Guide, GuideSchema } from "../schema";
 import { runAllProbes } from "../probes";
 import { composioTrack } from "../probes/composio-track";
@@ -7,7 +5,9 @@ import { resolveApp } from "./resolve";
 import { fetchSourceSnapshots } from "./fetch-sources";
 import { investigateApp } from "./investigate";
 import { auditGuide } from "./audit";
+import { applyComposioLayer, dedupeClaims } from "./composio-layer";
 import { EventEmitter, PipelineEvent } from "./types";
+import { loadGuide, saveGuide } from "../store";
 
 export * from "./types";
 export * from "./llm";
@@ -30,7 +30,6 @@ export async function generateGuide(
 ): Promise<Guide> {
   const onEvent = options?.onEvent || (() => {});
   const timeoutMs = options?.timeoutMs || 300_000;
-  const guidesDir = path.join(process.cwd(), "guides");
 
   const timeoutPromise = new Promise<never>((_, reject) =>
     setTimeout(
@@ -45,21 +44,10 @@ export async function generateGuide(
     const resolved = await resolveApp(input);
 
     // Cache check by slug: return existing finished guide unless fresh=true
-    const outputPath = path.join(guidesDir, `${resolved.slug}.json`);
-    if (!options?.fresh && fs.existsSync(outputPath)) {
-      try {
-        const cachedRaw = JSON.parse(fs.readFileSync(outputPath, "utf-8"));
-        const cachedGuide = GuideSchema.parse(cachedRaw);
-        onEvent({
-          type: "done",
-          slug: cachedGuide.slug,
-          path: outputPath,
-          guide: cachedGuide,
-        });
-        return cachedGuide;
-      } catch {
-        // Cached file invalid, regenerate
-      }
+    const cachedGuide = options?.fresh ? null : await loadGuide(resolved.slug);
+    if (cachedGuide) {
+      onEvent({ type: "done", slug: cachedGuide.slug, path: "(cached)", guide: cachedGuide });
+      return cachedGuide;
     }
 
     // 2. Stage: Fetch and Probe (in code, no model)
@@ -71,10 +59,10 @@ export async function generateGuide(
     // Run probes and composioTrack
     const probeObservations = await runAllProbes(
       resolved.origin,
-      resolved.slug,
+      resolved.composioSlugGuess,
       resolved.authorizationEndpoint
     );
-    const composioObs = await composioTrack(resolved.slug);
+    const composioObs = await composioTrack(resolved.composioSlugGuess);
     const track = composioObs.facts.track as "managed" | "bring-your-own" | "unknown";
 
     // 3. Stage: Investigate (model call, no tools)
@@ -88,17 +76,20 @@ export async function generateGuide(
 
     // 4. Stage: Audit (model call, no tools)
     onEvent({ type: "auditing", claimsCount: draftGuide.claims.length });
-    const finalGuide = await auditGuide(
+    const auditedGuide = await auditGuide(
       draftGuide,
       snapshots,
       probeObservations
     );
 
-    // 5. Save guide to guides/<slug>.json
-    if (!fs.existsSync(guidesDir)) {
-      fs.mkdirSync(guidesDir, { recursive: true });
-    }
-    fs.writeFileSync(outputPath, JSON.stringify(finalGuide, null, 2), "utf-8");
+    // Composio and probe facts are applied in code, then the result is re-validated
+    const today = new Date().toISOString().split("T")[0];
+    const finalGuide = GuideSchema.parse(
+      applyComposioLayer(dedupeClaims(auditedGuide), probeObservations, today)
+    );
+
+    // 5. Save guide (guides/ locally, Vercel Blob when deployed)
+    const outputPath = await saveGuide(finalGuide);
 
     // 6. Stage: Done
     onEvent({
