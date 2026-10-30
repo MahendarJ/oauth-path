@@ -1,84 +1,47 @@
-# OAuth Path - Implementation Plan
+# OAuth Path: architecture and status
 
-"OAuth Path" is a Next.js (TypeScript, App Router) web application providing a verdict-first guide for developers setting up and obtaining approval for provider OAuth apps, specifically tailored for use with Composio's custom auth configurations.
+This file records how the system is built and what is done. Product reasoning and setup are in [README.md](README.md); claim checks are in [VERIFICATION.md](VERIFICATION.md).
 
-Composio provides managed OAuth apps for ~125 toolkits; for ~262 others, developers must register their own OAuth app and configure custom auth credentials. OAuth Path targets this second group to demystify provider registration, approval workflows, gotchas, and Composio configuration.
+## Principles
 
----
+1. **Verdict first.** A prototype tier and a production tier, each with difficulty (Easy, Moderate, Hard, Gated), hands-on time, waiting time and a headline, followed by one "Do this next".
+2. **Composio first.** On the managed track (125 toolkits) the guide starts with Composio's managed app. On the bring-your-own track (262) it ends with the fixed Composio auth-config steps (`COMPOSIO_TAIL`, defined in code).
+3. **Every claim carries evidence.** Five levels: `tested` (a live probe in this run), `doc-confirmed`, `community-reported`, `inferred`, `unverified`. "Unknown" is a valid answer, and timelines are never invented.
+4. **Model output is checked by code.** Search and URL verification, probes and Composio facts run in code. The model has no tools and may cite only pages that were fetched.
 
-## Core Guiding Principles
+## Pipeline (`lib/pipeline/`)
 
-1. **Verdict-First**: Give developers an immediate appraisal (prototype vs. production difficulty, hands-on time, wait time/review timeline, confidence score, headline verdicts, and actionable summary) before diving into deep steps.
-2. **Every Claim Grounded (5 Evidence Levels)**:
-   - `tested`: Directly executed, tested end-to-end and verified working.
-   - `doc-confirmed`: Explicitly documented in official provider or Composio documentation.
-   - `community-reported`: Reported by developers in official community forums, issue trackers, or threads.
-   - `inferred`: Reasonably deduced from related provider behaviors, API docs, or standard OAuth 2.0 specs.
-   - `unverified`: Identified changes or claims where exact details/changelogs have not yet been directly read or verified.
-3. **Strict Source & Verification Rules**:
-   - `doc-confirmed` and `community-reported` claims need at least one source with `url` and `fetchedAt`.
-   - `inferred` claims may have no sources.
-   - `unverified` claims may have a null `fetchedAt`.
-   - Every `claimId` referenced in stages, blockers, and composio must exist in `claims`.
-4. **No Invented Timelines**: `unknown` is an explicit, valid answer. If a provider's review duration is undocumented or highly variable, do not invent artificial turnaround figures. Upper bounds (e.g. "Up to 6 weeks") are attributed explicitly.
-5. **Actionable Composio Tail**: Maintained as a deterministic code constant (`COMPOSIO_TAIL`) rather than duplicated per-guide data.
+| Stage | Done by | What happens |
+|---|---|---|
+| Resolve | Tavily + model + code | **Name input:** two web searches, and the model picks only from the results. **URL input:** the page is fetched and its links extracted, and the model picks only from those links. Code fetches and verifies every picked URL (HTTP 200, on the provider's domain, real text), then runs a second search limited to the provider's domain. It stops and asks for a docs URL if nothing verifies. |
+| Fetch and probe | code | Up to 8 pages, 32k characters of text in total. Probes: OAuth/OIDC discovery, RFC 9728 protected-resource metadata, the authorize endpoint with an invalid client, whether dynamic client registration is advertised, the MCP host (`mcp.<domain>`), Composio's catalog snapshot, and Composio's live toolkit pages. Every request goes through an SSRF guard. |
+| Investigate | model | Drafts the guide from the sources and probe results only. Validated with Zod, with one repair retry that receives the schema, the example and the failed draft. |
+| Audit | model | Re-checks the draft against the same sources and returns `{ guide, auditLog, auditSummary }`. One repair retry. |
+| Code layer | code | Removes duplicate claims. Adds Composio claims (k1–k7), each tied to an exact phrase in Composio's docs. Applies the managed-track start and the source-conflict rule. Logs every change in the audit log. |
 
----
+The model is any OpenAI-compatible endpoint (`LLM_BASE_URL`, `LLM_MODEL`); currently `gpt-oss-120b` on Cerebras. Prompts live in `prompts/*.md`; they are versioned and loaded at runtime.
 
-## Milestones
+## Storage (`lib/store.ts`)
 
-### Milestone 1: Schema & Data Model (Step 1 - Current)
-- [x] Define comprehensive Zod schema in `lib/schema.ts` representing `Guide`, `Verdict` (prototype + production tiers), `Stage`, `Blocker`, `Claim` (5 evidence levels), `AgentVsYou`, `AuditLog`, and `ComposioConfig`.
-- [x] Integrate gold-standard reference guide in `guides/_gold.json` (Spotify BYO research fixture).
-- [x] Implement schema validator script (`scripts/validate.ts`) with strict cross-field claimId verification.
-- [x] Set up `.env.example` with `ANTHROPIC_API_KEY`.
-- [x] Establish strict TypeScript configurations and build foundation.
+- Library guides ship in `guides/`. `_gold.json` is the hand-researched Spotify reference; every other file is model output with a generation log.
+- Guides generated live go to Vercel Blob when deployed and to `guides/` locally.
+- Caches go to `.cache/` locally and to the temp directory on Vercel.
 
-### Milestone 2: Probes (Data Collection & Auth Discovery)
-- [ ] Build provider probing utilities to fetch and parse official OAuth documentation, developer portal URLs, redirect requirements, and app submission policies.
-- [ ] Create Composio catalog scraper/catalog reader distinguishing managed (~125) vs bring-your-own (~262) apps.
-- [ ] Implement documentation crawler with rate-limiting, source attribution metadata capture (`url`, `fetchedAt`), and snapshot caching.
-- [ ] Probe common OAuth parameters: Authorization URL, Token URL, Scope syntax, PKCE requirements, Refresh token lifetimes, and localhost/production redirect URI restrictions.
+## UI (`app/`)
 
-### Milestone 3: Agent Pipeline (Research, Synthesis & Guide Generation)
-- [ ] Build Claude (Anthropic API) generation pipeline with structured output.
-- [ ] Implement multi-stage agent workflow:
-  1. **Researcher Agent**: Ingests raw provider docs, developer portal terms, announcements, changelogs, and Composio requirements.
-  2. **Claims & Stage Extractor**: Decomposes steps into stages owned by `developer`, `agent`, or `provider` with associated `claimIds`.
-  3. **Verdict Synthesizer**: Computes prototype and production difficulty ratings, realistic hands-on times, wait times (or marks `unknown`), and writes executive headline verdicts.
-  4. **Claim Verifier**: Flags ungrounded claims, assigns evidence levels (`tested`, `doc-confirmed`, `community-reported`, `inferred`, `unverified`), verifies sources, and builds the audit log of corrections.
-  5. **Agent vs. You Allocator**: Splits responsibilities between automated agent capabilities and tasks the developer must perform manually.
-- [ ] CLI tool (`npm run generate-guide -- --app <name>`) to run pipeline for any supported provider and output validated JSON to `guides/<slug>.json`.
+- `/`: search (name or URL) and the library.
+- `/generate?q=`: live progress streamed from `/api/generate` (server-sent events).
+- `/guides/<slug>`: the shareable guide. Verdict, agent vs you, steps, requirements, blockers, tested / not tested / uncertain, the evidence table with human checks, and the audit log.
 
-### Milestone 4: Next.js UI (App Router, Verdict-First UX)
-- [ ] Next.js 15+ App Router application with Tailwind CSS and modern styling.
-- [ ] **Home & Catalog Page** (`/`):
-  - Searchable list of all ~262 BYO providers with search and tag filters.
-  - Quick-verdict badges (e.g. "Prototype: Easy", "Production: Gated", "Requires Organization").
-- [ ] **Guide Detail Page** (`/guides/[slug]`):
-  - **Verdict Header**: Two-column prototype vs. production verdict card featuring difficulty badge, hands-on time, wait time, confidence, and headline summary.
-  - **Stage Tracker & Step-by-Step Walkthrough**: Visual stage cards with owners (`developer`, `agent`, `provider`), effort estimates, waiting steps, and clickable claim citations.
-  - **Agent vs. You Division**: Interactive view contrasting what the agent can automate vs what developer must execute.
-  - **Requirements & Pre-requisites Checklist**: Requirements list (e.g. Premium account, HTTPS redirect).
-  - **Blockers & Pitfalls Drawer**: "When it hits", "What to do", and "Escalation path" for known traps with claim links.
-  - **Evidence & Claims Inspector**: Interactive drawer displaying claim trust levels and citations with fetched dates and notes.
-  - **Composio Integration Section**: Standard instructions with code snippet for custom auth configs.
+## Status
 
-### Milestone 5: Verification & Quality Assurance
-- [ ] Automated validation test suite running `zod` against all saved guide files.
-- [ ] Veracity & Claim Linter enforcing:
-  - `doc-confirmed` and `community-reported` claims need at least one source with url and fetchedAt.
-  - `inferred` claims may have no sources.
-  - `unverified` claims may have a null fetchedAt.
-  - Every `claimId` referenced in stages, blockers, and composio must exist in claims.
-- [ ] Automated Next.js build and TypeScript type-checking (`npm run typecheck` & `npm run build`).
-- [ ] Responsive design testing for mobile and desktop screens.
-
-### Milestone 6: Documentation & Production Readiness
-- [ ] Complete `README.md` detailing:
-  - Architecture overview and design goals.
-  - Local development and running instructions.
-  - Guide schema specification.
-  - Instructions for running the probe and agent generation pipeline.
-  - How to add or contribute a new provider guide.
-- [ ] Clean environment configuration and deployment guide (Vercel ready).
+- [x] Schema and validation (`lib/schema.ts`, `npm run validate`)
+- [x] Probes with an SSRF guard, and tests
+- [x] Pipeline on free-tier providers (Cerebras, Tavily)
+- [x] Code layer for Composio facts, managed track, conflicts and duplicates
+- [x] Web UI with live generation and share links
+- [x] Six guides: Linear, Notion, Aha!, Xero, Clockify, Spotify (reference)
+- [x] VERIFICATION.md: 25 claims checked by hand, shown in the UI
+- [x] README and deployment readiness (Blob storage, bundled runtime files)
+- [ ] Deployed URL in the README
+- [ ] Next: batch generation over Composio's bring-your-own toolkits, with a human sampling pass per batch, and feeding earlier corrections into regeneration

@@ -2,7 +2,7 @@
 
 Look up an app and find out, before you build, whether you need your own OAuth app, how long it takes to get it ready for real users, what can block you, and which parts an agent can do for you. Type any app name or docs URL and an agent investigates it live and produces a guide you can share.
 
-**Live:** _add the deployed URL here_ · **Verification:** [VERIFICATION.md](VERIFICATION.md)
+**Live:** https://oauth-path-virid.vercel.app · **Source:** https://github.com/MahendarJ/oauth-path · **Verification:** [VERIFICATION.md](VERIFICATION.md)
 
 ## The problem, as I understood it
 
